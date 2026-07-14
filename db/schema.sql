@@ -236,6 +236,11 @@ CREATE TABLE cat_grupo_edad_60 (
 );
 COMMENT ON TABLE cat_grupo_edad_60 IS 'Agrupación de edades con corte en 60 y más años';
 
+INSERT INTO cat_grupo_edad_60 (g_edad_60ymas, g_edad_80ymas, descripcion) VALUES
+    (1,  1,  'Menor de 15'),(2,  2,  '15–19'),(3,  3,  '20–24'),(4,  4,  '25–29'),
+    (5,  5,  '30–34'),(6,  6,  '35–39'),(7,  7,  '40–44'),(8,  8,  '45–49'),(9,  9,  '50–54'),
+    (10, 10, '55–59'),(11, 11, '60 y más'),(12, 16, 'Ignorado');
+
 -- -----------------------------------------------------------------------------
 
 CREATE TABLE cat_edad_quinquenal (
@@ -395,7 +400,6 @@ COMMENT ON COLUMN fallecido_lesionado.edad_per IS 'Edad exacta en años. 999=Ign
 -- SECCIÓN 8: TABLAS GEOESPACIALES (PostGIS)
 -- Fuente: IDEG — agrip_03_Limites_departamentales.json
 --                agrip_04_Limites_municipales_340.json
--- Sistema de referencia: WGS84 (EPSG:4326)
 -- =============================================================================
 
 CREATE TABLE departamento_geom (
@@ -407,7 +411,7 @@ CREATE TABLE departamento_geom (
 COMMENT ON TABLE  departamento_geom            IS 'Geometría oficial de los 22 departamentos. Fuente: IDEG';
 COMMENT ON COLUMN departamento_geom.cod_dep    IS 'Código del departamento. Relación lógica con cat_departamento.depto_ocu.';
 COMMENT ON COLUMN departamento_geom.nombre     IS 'Nombre oficial del departamento.';
-COMMENT ON COLUMN departamento_geom.geom       IS 'Geometría MultiPolygon WGS84 (EPSG:4326)';
+COMMENT ON COLUMN departamento_geom.geom       IS 'Las geometrías fueron reproyectadas a WGS84 (EPSG:4326)';
 
 -- -----------------------------------------------------------------------------
 
