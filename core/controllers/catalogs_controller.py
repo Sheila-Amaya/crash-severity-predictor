@@ -11,7 +11,12 @@ from core.services.catalog_service import (
     get_vehicle_brands,
     get_vehicle_model_groups,
     get_vehicle_models,
-    get_vehicle_colors
+    get_vehicle_colors,
+    get_genders,
+    get_age_groups_80,
+    get_age_groups_60,
+    get_quinquennial_ages,
+    get_major_minor
 )
 
 
@@ -112,4 +117,49 @@ def list_vehicle_colors(db):
         raise HTTPException(
             status_code=500,
             detail=f"Error al obtener colores de vehículo: {str(e)}"
+        )
+
+def list_genders(db):
+    try:
+        return get_genders(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener sexos: {str(e)}"
+        )
+
+def list_age_groups_80(db):
+    try:
+        return get_age_groups_80(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener grupos de edad 80+: {str(e)}"
+        )
+
+def list_age_groups_60(db):
+    try:
+        return get_age_groups_60(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener grupos de edad 60+: {str(e)}"
+        )
+
+def list_quinquennial_ages(db):
+    try:
+        return get_quinquennial_ages(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener edades quinquenales: {str(e)}"
+        )
+
+def list_major_minor(db):
+    try:
+        return get_major_minor(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener mayor/menor: {str(e)}"
         )

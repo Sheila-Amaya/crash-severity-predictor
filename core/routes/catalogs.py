@@ -16,7 +16,12 @@ from core.controllers.catalogs_controller import (
     list_vehicle_brands,
     list_vehicle_model_groups,
     list_vehicle_models,
-    list_vehicle_colors
+    list_vehicle_colors,
+    list_genders,
+    list_age_groups_80,
+    list_age_groups_60,
+    list_quinquennial_ages,
+    list_major_minor
 )
 
 from core.schemas.department import DepartmentResponse
@@ -30,6 +35,11 @@ from core.schemas.vehicle_brand import VehicleBrandResponse
 from core.schemas.vehicle_model_group import VehicleModelGroupResponse
 from core.schemas.vehicle_model import VehicleModelResponse
 from core.schemas.vehicle_color import VehicleColorResponse
+from core.schemas.gender import GenderResponse
+from core.schemas.age_group_80 import AgeGroup80Response
+from core.schemas.age_group_60 import AgeGroup60Response
+from core.schemas.age_quinquennial import QuinquennialAgeResponse
+from core.schemas.major_minor import MajorMinorResponse
 
 router = APIRouter(
     prefix="/catalogs",
@@ -158,3 +168,58 @@ def get_vehicle_colors(
     db: Session = Depends(get_db)
 ):
     return list_vehicle_colors(db)
+
+@router.get(
+    "/sexo",
+    response_model=List[GenderResponse],
+    summary="Obtener sexos",
+    description="Devuelve el catálogo de sexo."
+)
+def get_genders(
+    db: Session = Depends(get_db)
+):
+    return list_genders(db)
+
+@router.get(
+    "/grupos-edad-80",
+    response_model=List[AgeGroup80Response],
+    summary="Obtener grupos de edad 80+",
+    description="Devuelve el catálogo de grupos de edad de 80 años o más."
+)
+def get_age_groups_80(
+    db: Session = Depends(get_db)
+):
+    return list_age_groups_80(db)
+
+@router.get(
+    "/grupos-edad-60",
+    response_model=List[AgeGroup60Response],
+    summary="Obtener grupos de edad 60+",
+    description="Devuelve el catálogo de grupos de edad de 60 años o más junto con su grupo de 80 años relacionado."
+)
+def get_age_groups_60(
+    db: Session = Depends(get_db)
+):
+    return list_age_groups_60(db)
+
+@router.get(
+    "/edad-quinquenal",
+    response_model=List[QuinquennialAgeResponse],
+    summary="Obtener edades quinquenales",
+    description="Devuelve el catálogo de edades quinquenales junto con sus grupos de 60 y 80 años relacionados."
+)
+def get_quinquennial_ages(
+    db: Session = Depends(get_db)
+):
+    return list_quinquennial_ages(db)
+
+@router.get(
+    "/mayor-menor",
+    response_model=List[MajorMinorResponse],
+    summary="Obtener clasificación mayor o menor de edad",
+    description="Devuelve el catálogo de clasificación de mayoría de edad."
+)
+def get_major_minor(
+    db: Session = Depends(get_db)
+):
+    return list_major_minor(db)

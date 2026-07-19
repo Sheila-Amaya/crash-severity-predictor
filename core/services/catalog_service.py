@@ -241,3 +241,127 @@ def get_vehicle_colors(db):
         }
         for row in result
     ]
+
+def get_genders(db):
+
+    query = text("""
+        SELECT
+            sexo_per,
+            descripcion
+        FROM cat_sexo
+        ORDER BY sexo_per;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "sexo_per": row.sexo_per,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+
+def get_age_groups_80(db):
+
+    query = text("""
+        SELECT
+            g_edad_80ymas,
+            descripcion
+        FROM cat_grupo_edad_80
+        ORDER BY g_edad_80ymas;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "g_edad_80ymas": row.g_edad_80ymas,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+
+def get_age_groups_60(db):
+
+    query = text("""
+        SELECT
+            g60.g_edad_60ymas,
+            g60.descripcion,
+            g80.g_edad_80ymas,
+            g80.descripcion AS descripcion_80
+        FROM cat_grupo_edad_60 g60
+        INNER JOIN cat_grupo_edad_80 g80
+            ON g60.g_edad_80ymas = g80.g_edad_80ymas
+        ORDER BY g60.g_edad_60ymas;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "g_edad_60ymas": row.g_edad_60ymas,
+            "descripcion": row.descripcion,
+            "g_edad_80ymas": row.g_edad_80ymas,
+            "descripcion_80": row.descripcion_80
+        }
+        for row in result
+    ]
+
+def get_quinquennial_ages(db):
+
+    query = text("""
+        SELECT
+            eq.edad_quinquenales,
+            eq.descripcion,
+
+            g60.g_edad_60ymas,
+            g60.descripcion AS descripcion_60,
+
+            g80.g_edad_80ymas,
+            g80.descripcion AS descripcion_80
+
+        FROM cat_edad_quinquenal eq
+
+        INNER JOIN cat_grupo_edad_60 g60
+            ON eq.g_edad_60ymas = g60.g_edad_60ymas
+
+        INNER JOIN cat_grupo_edad_80 g80
+            ON g60.g_edad_80ymas = g80.g_edad_80ymas
+
+        ORDER BY eq.edad_quinquenales;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "edad_quinquenales": row.edad_quinquenales,
+            "descripcion": row.descripcion,
+            "g_edad_60ymas": row.g_edad_60ymas,
+            "descripcion_60": row.descripcion_60,
+            "g_edad_80ymas": row.g_edad_80ymas,
+            "descripcion_80": row.descripcion_80
+        }
+        for row in result
+    ]
+
+def get_major_minor(db):
+
+    query = text("""
+        SELECT
+            mayor_menor,
+            descripcion
+        FROM cat_mayor_menor
+        ORDER BY mayor_menor;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "mayor_menor": row.mayor_menor,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
