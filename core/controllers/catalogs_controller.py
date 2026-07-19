@@ -193,3 +193,12 @@ def list_fall_les(db):
             status_code=500,
             detail=f"Error al obtener catálogo de fallecido/lesionado: {str(e)}"
         )
+
+def list_fall_les(db):
+    try:
+        return get_fall_les(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener catálogo de fallecido/lesionado: {str(e)}"
+        )

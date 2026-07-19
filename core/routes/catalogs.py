@@ -252,3 +252,14 @@ def get_hospitalizations(
     db: Session = Depends(get_db)
 ):
     return list_hospitalizations(db)
+
+@router.get(
+    "/fallecido-lesionado",
+    response_model=List[FallLesResponse],
+    summary="Obtener estado de fallecido o lesionado",
+    description="Devuelve el catálogo de fallecido o lesionado."
+)
+def get_fall_les(
+    db: Session = Depends(get_db)
+):
+    return list_fall_les(db)
