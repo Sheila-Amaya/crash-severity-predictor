@@ -5,7 +5,13 @@ from core.services.catalog_service import (
     get_municipalities, 
     get_days, 
     get_hour_groups,
-    get_hour_groups5
+    get_hour_groups5,
+    get_event_types,
+    get_vehicle_types,
+    get_vehicle_brands,
+    get_vehicle_model_groups,
+    get_vehicle_models,
+    get_vehicle_colors
 )
 
 
@@ -52,4 +58,58 @@ def list_hour_groups5(db):
         raise HTTPException(
             status_code=500,
             detail=f"Error al obtener grupos de hora 5: {str(e)}"
+        )
+
+def list_event_types(db):
+    try:
+        return get_event_types(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener tipos de evento: {str(e)}"
+        )
+
+def list_vehicle_types(db):
+    try:
+        return get_vehicle_types(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener tipos de vehículo: {str(e)}"
+        )
+
+def list_vehicle_brands(db):
+    try:
+        return get_vehicle_brands(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener marcas de vehículo: {str(e)}"
+        )
+
+def list_vehicle_model_groups(db):
+    try:
+        return get_vehicle_model_groups(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener grupos de modelo: {str(e)}"
+        )
+
+def list_vehicle_models(db, marca_veh: int):
+    try:
+        return get_vehicle_models(db, marca_veh)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener modelos de vehículo: {str(e)}"
+        )
+
+def list_vehicle_colors(db):
+    try:
+        return get_vehicle_colors(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener colores de vehículo: {str(e)}"
         )
