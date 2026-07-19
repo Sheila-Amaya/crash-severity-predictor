@@ -21,7 +21,11 @@ from core.controllers.catalogs_controller import (
     list_age_groups_80,
     list_age_groups_60,
     list_quinquennial_ages,
-    list_major_minor
+    list_major_minor,
+    list_driver_statuses,
+    list_hospitalizations,
+    list_fall_les
+    
 )
 
 from core.schemas.department import DepartmentResponse
@@ -40,6 +44,9 @@ from core.schemas.age_group_80 import AgeGroup80Response
 from core.schemas.age_group_60 import AgeGroup60Response
 from core.schemas.age_quinquennial import QuinquennialAgeResponse
 from core.schemas.major_minor import MajorMinorResponse
+from core.schemas.driver_status import DriverStatusResponse
+from core.schemas.hospitalization import HospitalizationResponse
+from core.schemas.fall_les import FallLesResponse
 
 router = APIRouter(
     prefix="/catalogs",
@@ -223,3 +230,25 @@ def get_major_minor(
     db: Session = Depends(get_db)
 ):
     return list_major_minor(db)
+
+@router.get(
+    "/estado-conductor",
+    response_model=List[DriverStatusResponse],
+    summary="Obtener estados del conductor",
+    description="Devuelve el catálogo de estados del conductor."
+)
+def get_driver_statuses(
+    db: Session = Depends(get_db)
+):
+    return list_driver_statuses(db)
+
+@router.get(
+    "/internado",
+    response_model=List[HospitalizationResponse],
+    summary="Obtener estado de internamiento",
+    description="Devuelve el catálogo de personas internadas y no internadas."
+)
+def get_hospitalizations(
+    db: Session = Depends(get_db)
+):
+    return list_hospitalizations(db)

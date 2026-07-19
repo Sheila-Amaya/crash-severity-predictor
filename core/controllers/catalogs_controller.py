@@ -16,7 +16,10 @@ from core.services.catalog_service import (
     get_age_groups_80,
     get_age_groups_60,
     get_quinquennial_ages,
-    get_major_minor
+    get_major_minor,
+    get_driver_statuses,
+    get_hospitalizations,
+    get_fall_les
 )
 
 
@@ -162,4 +165,31 @@ def list_major_minor(db):
         raise HTTPException(
             status_code=500,
             detail=f"Error al obtener mayor/menor: {str(e)}"
+        )
+
+def list_driver_statuses(db):
+    try:
+        return get_driver_statuses(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener estados del conductor: {str(e)}"
+        )
+
+def list_hospitalizations(db):
+    try:
+        return get_hospitalizations(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener estado de internamiento: {str(e)}"
+        )
+
+def list_fall_les(db):
+    try:
+        return get_fall_les(db)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener catálogo de fallecido/lesionado: {str(e)}"
         )

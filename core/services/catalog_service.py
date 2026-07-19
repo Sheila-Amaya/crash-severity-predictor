@@ -365,3 +365,63 @@ def get_major_minor(db):
         }
         for row in result
     ]
+
+def get_driver_statuses(db):
+
+    query = text("""
+        SELECT
+            estado_con,
+            descripcion
+        FROM cat_estado_conductor
+        ORDER BY estado_con;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "estado_con": row.estado_con,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+
+def get_hospitalizations(db):
+
+    query = text("""
+        SELECT
+            int_o_noint,
+            descripcion
+        FROM cat_internado
+        ORDER BY int_o_noint;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "int_o_noint": row.int_o_noint,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+
+def get_fall_les(db):
+
+    query = text("""
+        SELECT
+            fall_les,
+            nombre
+        FROM cat_fall_les
+        ORDER BY fall_les;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "fall_les": row.fall_les,
+            "nombre": row.nombre
+        }
+        for row in result
+    ]
