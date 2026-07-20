@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 
 from core.services.catalog_service import ( 
     get_departments, 
@@ -22,183 +21,59 @@ from core.services.catalog_service import (
     get_fall_les
 )
 
-
 def list_departments(db):
-    try:
-        return get_departments(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener departamentos: {str(e)}"
-        )
+    return get_departments(db)
 
 def list_municipalities(db, depto_ocu: int):
-    try:
-        return get_municipalities(db, depto_ocu)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener municipios: {str(e)}"
-        )
+    return get_municipalities(db, depto_ocu)
 
 def list_days(db):
-    try:
-        return get_days(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener días de la semana: {str(e)}"
-        )
+    return get_days(db)
 
 def list_hour_groups(db):
-    try:
-        return get_hour_groups(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener grupos de hora: {str(e)}"
-        )
+    return get_hour_groups(db)
 
 def list_hour_groups5(db):
-    try:
-        return get_hour_groups5(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener grupos de hora 5: {str(e)}"
-        )
+    return get_hour_groups5(db)
 
 def list_event_types(db):
-    try:
-        return get_event_types(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener tipos de evento: {str(e)}"
-        )
+    return get_event_types(db)
 
 def list_vehicle_types(db):
-    try:
-        return get_vehicle_types(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener tipos de vehículo: {str(e)}"
-        )
+    return get_vehicle_types(db)
 
 def list_vehicle_brands(db):
-    try:
-        return get_vehicle_brands(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener marcas de vehículo: {str(e)}"
-        )
+    return get_vehicle_brands(db)
 
 def list_vehicle_model_groups(db):
-    try:
-        return get_vehicle_model_groups(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener grupos de modelo: {str(e)}"
-        )
+    return get_vehicle_model_groups(db)
 
 def list_vehicle_models(db, marca_veh: int):
-    try:
-        return get_vehicle_models(db, marca_veh)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener modelos de vehículo: {str(e)}"
-        )
+    return get_vehicle_models(db, marca_veh)
 
 def list_vehicle_colors(db):
-    try:
-        return get_vehicle_colors(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener colores de vehículo: {str(e)}"
-        )
+    return get_vehicle_colors(db)
 
 def list_genders(db):
-    try:
-        return get_genders(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener sexos: {str(e)}"
-        )
+    return get_genders(db)
 
 def list_age_groups_80(db):
-    try:
-        return get_age_groups_80(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener grupos de edad 80+: {str(e)}"
-        )
+    return get_age_groups_80(db)
 
 def list_age_groups_60(db):
-    try:
-        return get_age_groups_60(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener grupos de edad 60+: {str(e)}"
-        )
+    return get_age_groups_60(db)
 
 def list_quinquennial_ages(db):
-    try:
-        return get_quinquennial_ages(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener edades quinquenales: {str(e)}"
-        )
+    return get_quinquennial_ages(db)
 
 def list_major_minor(db):
-    try:
-        return get_major_minor(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener mayor/menor: {str(e)}"
-        )
+    return get_major_minor(db)
 
 def list_driver_statuses(db):
-    try:
-        return get_driver_statuses(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener estados del conductor: {str(e)}"
-        )
+    return get_driver_statuses(db)
 
 def list_hospitalizations(db):
-    try:
-        return get_hospitalizations(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener estado de internamiento: {str(e)}"
-        )
+    return get_hospitalizations(db)
 
 def list_fall_les(db):
-    try:
-        return get_fall_les(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener catálogo de fallecido/lesionado: {str(e)}"
-        )
-
-def list_fall_les(db):
-    try:
-        return get_fall_les(db)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al obtener catálogo de fallecido/lesionado: {str(e)}"
-        )
+    return get_fall_les(db)

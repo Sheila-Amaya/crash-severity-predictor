@@ -1,7 +1,11 @@
+import logging
 from sqlalchemy import text
+
+logger = logging.getLogger(__name__)
 
 
 def get_departments(db):
+    logger.info("Loading departments catalog")
 
     query = text("""
         SELECT
@@ -23,6 +27,7 @@ def get_departments(db):
     
     
 def get_municipalities(db, depto_ocu: int):
+    logger.info("Loading municipalities catalog")
 
     query = text("""
         SELECT
@@ -49,6 +54,7 @@ def get_municipalities(db, depto_ocu: int):
     ]
 
 def get_days(db):
+    logger.info("Loading days of week catalog")
 
     query = text("""
         SELECT
@@ -69,6 +75,7 @@ def get_days(db):
     ]
 
 def get_hour_groups(db):
+    logger.info("Loading hour groups catalog")
 
     query = text("""
         SELECT
@@ -90,6 +97,7 @@ def get_hour_groups(db):
     
 
 def get_hour_groups5(db):
+    logger.info("Loading 5-hour groups catalog")
 
     query = text("""
         SELECT
@@ -112,6 +120,7 @@ def get_hour_groups5(db):
     ]
 
 def get_event_types(db):
+    logger.info("Loading event types catalog")
 
     query = text("""
         SELECT
@@ -133,6 +142,7 @@ def get_event_types(db):
 
 
 def get_vehicle_types(db):
+    logger.info("Loading vehicle types catalog")
 
     query = text("""
         SELECT
@@ -153,6 +163,7 @@ def get_vehicle_types(db):
     ]
     
 def get_vehicle_brands(db):
+    logger.info("Loading vehicle brands catalog")
 
     query = text("""
         SELECT
@@ -173,6 +184,7 @@ def get_vehicle_brands(db):
     ]
 
 def get_vehicle_model_groups(db):
+    logger.info("Loading vehicle model groups catalog")
 
     query = text("""
         SELECT
@@ -193,6 +205,7 @@ def get_vehicle_model_groups(db):
     ]
 
 def get_vehicle_models(db, marca_veh: int):
+    logger.info("Loading vehicle models catalog")
 
     query = text("""
         SELECT
@@ -223,6 +236,7 @@ def get_vehicle_models(db, marca_veh: int):
     ]
 
 def get_vehicle_colors(db):
+    logger.info("Loading vehicle colors catalog")
 
     query = text("""
         SELECT
@@ -243,6 +257,7 @@ def get_vehicle_colors(db):
     ]
 
 def get_genders(db):
+    logger.info("Loading genders catalog")
 
     query = text("""
         SELECT
@@ -263,6 +278,7 @@ def get_genders(db):
     ]
 
 def get_age_groups_80(db):
+    logger.info("Loading 80+ age groups catalog")
 
     query = text("""
         SELECT
@@ -283,6 +299,7 @@ def get_age_groups_80(db):
     ]
 
 def get_age_groups_60(db):
+    logger.info("Loading 60+ age groups catalog")
 
     query = text("""
         SELECT
@@ -309,6 +326,7 @@ def get_age_groups_60(db):
     ]
 
 def get_quinquennial_ages(db):
+    logger.info("Loading quinquennial ages catalog")
 
     query = text("""
         SELECT
@@ -347,6 +365,7 @@ def get_quinquennial_ages(db):
     ]
 
 def get_major_minor(db):
+    logger.info("Loading major/minor catalog")
 
     query = text("""
         SELECT
@@ -367,6 +386,7 @@ def get_major_minor(db):
     ]
 
 def get_driver_statuses(db):
+    logger.info("Loading driver statuses catalog")
 
     query = text("""
         SELECT
@@ -387,6 +407,7 @@ def get_driver_statuses(db):
     ]
 
 def get_hospitalizations(db):
+    logger.info("Loading hospitalization catalog")
 
     query = text("""
         SELECT
@@ -407,6 +428,7 @@ def get_hospitalizations(db):
     ]
 
 def get_fall_les(db):
+    logger.info("Loading injury/fatality catalog")
 
     query = text("""
         SELECT
