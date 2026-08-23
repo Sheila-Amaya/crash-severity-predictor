@@ -8,6 +8,7 @@ from core.middleware.logging_config import setup_logging
 
 from core.routes.predict import router as predict_router
 from core.routes.catalogs import router as catalogs_router
+from core.routes.maps import router as maps_router
 
 
 # -- Logging ---------------------------------------------------------
@@ -80,6 +81,10 @@ app.include_router(
     catalogs_router,
 )
 
+app.include_router(
+    maps_router,
+    prefix="/api",
+)
 
 # -- Health Check ----------------------------------------------------
 
