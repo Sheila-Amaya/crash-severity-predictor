@@ -1,0 +1,8 @@
+{
+  "modelo": "Random Forest",
+  "accuracy": 0.6949,
+  "f1_score": 0.7233,
+  "roc_auc": 0.7336,
+  "precision_fallecido": 0.3382,
+  "recall_fallecido": 0.6245
+}

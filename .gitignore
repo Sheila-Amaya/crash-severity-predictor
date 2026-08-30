@@ -157,7 +157,8 @@ ENV/
 env.bak/
 venv.bak/
 
-data/
+data/raw/
+data/models/*.pkl
 
 # Spyder project settings
 .spyderproject
