@@ -160,6 +160,10 @@ venv.bak/
 data/raw/
 data/models/*.pkl
 
+# Frontend (Node / Vite)
+node_modules/
+dist/
+
 # Spyder project settings
 .spyderproject
 .spyproject
