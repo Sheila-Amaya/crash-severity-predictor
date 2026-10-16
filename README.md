@@ -21,12 +21,19 @@ con `notebooks/06_model_random_forest.ipynb`. Sin él, la API arranca igual y
 
 ### Variables de entorno
 
-Se leen de `.env` en la raíz del proyecto (no se sube a git).
+Se leen de `.env` en la raíz del proyecto (no se sube a git). Ejemplo:
+
+```env
+DB_URL=postgresql://<usuario>:<contraseña>@<host>:5432/<base>
+CORS_ORIGINS=http://localhost:5173
+```
+
+`http://localhost:5173` es el servidor de desarrollo del frontend (Vite).
 
 | Variable | Obligatoria | Descripción |
 |---|---|---|
 | `DB_URL` | Sí | Cadena de conexión SQLAlchemy a PostgreSQL, p. ej. `postgresql://<usuario>:<contraseña>@<host>:5432/<base>` |
-| `CORS_ORIGINS` | No | Orígenes permitidos, separados por coma, p. ej. `http://localhost:5173`. Vacío = ninguno. `*` se ignora |
+| `CORS_ORIGINS` | No | Orígenes permitidos, separados por coma. Vacío = ninguno. `*` se ignora |
 
 ### Ejecutar
 
@@ -210,16 +217,6 @@ probabilidad, con `efecto` `aumenta` o `disminuye`.
 curl -X POST http://localhost:8000/api/predecir \
   -H "Content-Type: application/json" \
   -d '{"tipo_eve": 2, "tipo_veh": 18, "g_hora_5": 3, "dia_sem_ocu": 6, "sexo_per": 1, "edad_quinquenales": 7, "mayor_menor": 1, "depto_ocu": 1}'
-```
-
-### `GET /api/maps/departments` y `GET /api/maps/municipalities`
-
-GeoJSON con la geometría completa (sin simplificar ni filtrar) y las
-propiedades `accidentes`, `fallecidos` y `lesionados`.
-
-```bash
-curl http://localhost:8000/api/maps/departments
-curl http://localhost:8000/api/maps/municipalities
 ```
 
 ### `GET /api/catalogs/*` — catálogos individuales
