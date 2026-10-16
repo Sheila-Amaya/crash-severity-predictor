@@ -34,7 +34,11 @@ def load_model():
         return _model, _explainer
 
     if not MODEL_PATH.exists():
-        raise RuntimeError(f"Model file not found: {MODEL_PATH}")
+        raise RuntimeError(
+            f"Model file not found: {MODEL_PATH}. Provide data/models/random_forest.pkl "
+            "(in Docker it is mounted read-only from ./data/models); "
+            "/api/predecir will answer 503 until then."
+        )
 
     _model = joblib.load(MODEL_PATH)
     _explainer = shap.TreeExplainer(_model)

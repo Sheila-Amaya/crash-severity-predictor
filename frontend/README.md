@@ -58,6 +58,10 @@ VITE_API_URL=https://api.ejemplo.org npm run build   # PowerShell: $env:VITE_API
 npm run preview                                      # sirve dist/ en http://localhost:4173
 ```
 
+Con Docker no hace falta nada de esto a mano: `frontend/Dockerfile` compila
+con `VITE_API_URL` vacía y nginx (`frontend/nginx.conf`) sirve la SPA y hace
+de proxy de `/api` (ver "Despliegue con Docker" en el README de la raíz).
+
 `dist/` es un sitio estático. Al publicarlo:
 
 - La API debe permitir el origen del frontend en `CORS_ORIGINS` (o servirse en

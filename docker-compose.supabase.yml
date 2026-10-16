@@ -1,0 +1,27 @@
+# Modo Supabase (alternativo): API + nginx contra una base externa; no hay
+# contenedor db ni hacen falta POSTGRES_PASSWORD / APP_DB_PASSWORD.
+#
+#   docker compose -f docker-compose.supabase.yml up -d --build
+#
+# o, para no repetir el -f, en .env:  COMPOSE_FILE=docker-compose.supabase.yml
+
+name: severidad-vial
+
+services:
+  api:
+    extends: { file: compose.comun.yml, service: api }
+    environment:
+      # Idealmente un rol con solo SELECT (ver docs/PENDIENTES_PUBLICACION.md)
+      DB_URL: ${SUPABASE_DB_URL:?Defina SUPABASE_DB_URL en .env para el modo Supabase}
+    # Sin red interna aislada: la API necesita salir a internet hacia Supabase
+    networks: [servicios]
+
+  web:
+    extends: { file: compose.comun.yml, service: web }
+    networks: [servicios]
+    depends_on:
+      api:
+        condition: service_healthy
+
+networks:
+  servicios: {}

@@ -47,6 +47,8 @@ uvicorn core.app:app --reload
 
 Documentación interactiva: `http://localhost:8000/docs`.
 
+Para publicarlo en un servidor, ver [Despliegue con Docker](#despliegue-con-docker).
+
 En Windows, `.\dev.ps1` abre dos ventanas de PowerShell: la API (con el `.venv` activado) y el frontend (`npm run dev`, en `http://localhost:5173`).
 
 ### Frontend
@@ -82,6 +84,196 @@ pytest                      # todo; las de integración se omiten si no hay DB_U
 pytest -m "not integration" # solo pruebas unitarias (mocks, sin base de datos)
 pytest -m integration       # solo contra la base real (únicamente SELECT)
 ```
+
+## Despliegue con Docker
+
+Todo el sistema (base PostGIS, API y frontend con nginx) corre con un solo
+comando. Pensado para publicarlo en un servidor durante meses: reinicio
+automático, datos en un volumen persistente y un solo puerto expuesto.
+
+```
+                 puerto WEB_PORT (8080)
+navegador ──────────────► web (nginx: SPA + proxy /api)
+                              │  red "interna" (sin salida a internet)
+                              ▼
+                          api (FastAPI, rol app_lectura: solo SELECT)
+                              │
+                              ▼
+                          db (PostgreSQL 17 + PostGIS 3.5, volumen pgdata)
+```
+
+### Requisitos
+
+- Docker Engine 24+ con Docker Compose v2.24+ (o Docker Desktop).
+- El modelo `data/models/random_forest.pkl` (no está en git; ver más abajo).
+- La semilla de la base `db/seed/semilla.dump` (no está en git; ver más abajo).
+- Unos 3 GB libres en disco y 2 GB de RAM para los contenedores.
+
+### Pasos
+
+```bash
+cp .env.example .env            # Windows: copy .env.example .env
+# Edite .env: POSTGRES_PASSWORD y APP_DB_PASSWORD (obligatorias)
+# Coloque el modelo y la semilla (ver abajo) y luego:
+docker compose up -d --build
+```
+
+La app queda en `http://localhost:8080` (o el `WEB_PORT` elegido). El primer
+arranque restaura la semilla (alrededor de un minuto); los siguientes
+reutilizan el volumen.
+
+### Variables (`.env`)
+
+| Variable | Obligatoria | Uso |
+|---|---|---|
+| `POSTGRES_PASSWORD` | Sí | Contraseña del superusuario `postgres` del contenedor db. |
+| `APP_DB_PASSWORD` | Sí | Contraseña del rol `app_lectura` (solo `SELECT`), con el que se conecta la API. Solo letras y números: va dentro de una URL. |
+| `POSTGRES_DB` | No | Nombre de la base (por defecto `severidad_vial`). |
+| `WEB_PORT` | No | Puerto del host donde escucha nginx (por defecto `8080`). |
+| `SUPABASE_DB_URL` | Solo modo Supabase | Cadena de conexión a la base externa. |
+
+Si falta una obligatoria, Compose se detiene con un mensaje que la nombra.
+Genere contraseñas con `openssl rand -hex 24`.
+
+### Qué hace cada servicio
+
+- **db** (`postgis/postgis:17-3.5`): con el volumen vacío,
+  `db/docker/20_semilla.sh` verifica el SHA-256 de la semilla, la restaura,
+  crea el rol `app_lectura` (solo `CONNECT` y `SELECT`, transacciones de solo
+  lectura) y comprueba los conteos (71,942 víctimas, 13,741 fallecidos, 58,201
+  lesionados, 52,488 hechos). Si falta la semilla o algo no cuadra, se detiene
+  con un mensaje claro. No publica puertos.
+- **api** (`Dockerfile`, Python 3.14.0, scikit-learn 1.8.0): usuario no root y
+  `HEALTHCHECK` a `/`. No publica puertos ni tiene salida a internet.
+- **web** (`frontend/Dockerfile`, nginx):
+  - sirve la SPA (con `/simulador` y `/acerca` recargables) y hace proxy de
+    `/api` a la API (mismo origen, sin CORS);
+  - gzip y caché inmutable para `/assets/`;
+  - cabeceras de seguridad: CSP con el hash del script del tema, `nosniff`,
+    `Referrer-Policy` y `X-Frame-Options: DENY`. HSTS está comentado en
+    `frontend/nginx.conf`: actívelo solo cuando el sitio se sirva por HTTPS.
+
+Todos tienen `restart: unless-stopped` y límite de memoria (db 512 MB, api
+1 GB, web 128 MB).
+
+### El modelo
+
+La API usa **`data/models/random_forest.pkl`**, montado como volumen de solo
+lectura en `/app/data/models`. No va en la imagen ni en git. Si falta, la API
+arranca igual, lo indica en su log y `/api/predecir` responde **503**. Durante
+el build (`docker compose build api`) se comprueba que el `.pkl` y SHAP cargan
+con las versiones de la imagen.
+
+Para distribuirlo, publíquelo como asset de un GitHub Release junto con su
+huella, igual que la semilla (abajo):
+
+```bash
+sha256sum data/models/random_forest.pkl > data/models/random_forest.pkl.sha256
+```
+
+### La semilla de la base
+
+`db/seed/semilla.dump` es un `pg_dump` del esquema `public` (sin
+`fallecido_lesionado_old`) de unos 5 MB. Está fuera de git (`.gitignore`).
+
+**Generarla** una vez desde la base de origen (p. ej. Supabase). Es un
+`pg_dump` de solo lectura con el `DB_URL` del `.env`, que no se imprime:
+
+```bash
+bash scripts/docker/generar_semilla.sh       # PowerShell: .\scripts\docker\generar_semilla.ps1
+```
+
+Crea `semilla.dump` y `semilla.dump.sha256`.
+
+**Publicarla** como asset de un Release (con la [CLI de GitHub](https://cli.github.com/)):
+
+```bash
+gh release create semilla-2026-10 db/seed/semilla.dump db/seed/semilla.dump.sha256 \
+  --title "Semilla de la base" --notes "pg_dump del esquema public (INE 2018-2024)."
+```
+
+**Descargarla y verificarla** antes de levantar la base:
+
+```bash
+gh release download semilla-2026-10 --dir db/seed    # o descárguela desde la página del Release
+cd db/seed && sha256sum -c semilla.dump.sha256       # debe decir: semilla.dump: OK
+```
+
+En PowerShell, compare `(Get-FileHash db\seed\semilla.dump -Algorithm SHA256).Hash`
+con el contenido de `semilla.dump.sha256`. Si el `.sha256` está en `db/seed/`,
+el contenedor también lo verifica antes de restaurar.
+
+### Modo Supabase (alternativo)
+
+Por defecto la base corre en el contenedor, para no depender de que Supabase
+pause el proyecto por inactividad. Para usar Supabase en su lugar:
+
+```bash
+# En .env: SUPABASE_DB_URL=postgresql://...  (no hacen falta POSTGRES_PASSWORD ni APP_DB_PASSWORD)
+docker compose -f docker-compose.supabase.yml up -d --build
+```
+
+También puede dejar `COMPOSE_FILE=docker-compose.supabase.yml` en `.env` y usar
+`docker compose up -d --build` como siempre; para volver al modo contenedor,
+quite esa línea. Los servicios comunes están en `compose.comun.yml`.
+
+### Operación
+
+```bash
+docker compose ps                      # estado y salud
+docker compose logs -f api             # logs de web, api o db (sin cadenas de conexión)
+docker compose restart api             # reiniciar un servicio
+docker compose down                    # detener (conserva los datos)
+docker compose down -v                 # detener Y BORRAR la base (volumen pgdata)
+```
+
+**Actualizar** tras un `git pull`:
+
+```bash
+docker compose up -d --build           # reconstruye api y web; la base se conserva
+```
+
+La semilla solo se usa con el volumen vacío. Para cargar datos nuevos en una
+base existente, use `restaurar` (abajo).
+
+### Respaldo y restauración
+
+```bash
+bash scripts/docker/respaldar.sh                   # PowerShell: .\scripts\docker\respaldar.ps1
+bash scripts/docker/restaurar.sh <archivo.dump>    # PowerShell: .\scripts\docker\restaurar.ps1 <archivo.dump>
+```
+
+- Los respaldos van a `respaldos/` (fuera de git), con su `.sha256`, en el
+  mismo formato que la semilla: un respaldo sirve como semilla nueva.
+- `restaurar`:
+  - verifica la huella y pide escribir `RESTAURAR` (en PowerShell, `-Confirmado`
+    omite la pregunta);
+  - reemplaza las tablas en una sola transacción: si algo falla, no cambia nada;
+  - devuelve los permisos a `app_lectura` y muestra los conteos.
+- Copie los respaldos fuera del servidor: un respaldo en el mismo disco no
+  protege de la pérdida de ese disco.
+
+### Problemas frecuentes
+
+- **`required variable POSTGRES_PASSWORD is missing a value`**: falta la
+  variable en `.env`, o se ejecutó `docker compose` fuera de la raíz del repo.
+- **El contenedor db se detiene con "falta db/seed/semilla.dump"** (o con "el
+  SHA-256 no coincide" o "conteos inesperados"): corrija la semilla y luego
+  ejecute `docker compose down -v` y `docker compose up -d`. El `-v` es
+  necesario: el volumen quedó inicializado a medias y, si no, la carga no se
+  repite.
+- **El simulador dice "El modelo no está disponible"**: falta
+  `data/models/random_forest.pkl`; cópielo y ejecute `docker compose restart api`.
+- **`Bind for 0.0.0.0:8080 failed: port is already allocated`**: otro programa
+  usa el puerto; cambie `WEB_PORT` en `.env`.
+- **La API queda "unhealthy" en modo Supabase**: el proyecto de Supabase está
+  pausado o `SUPABASE_DB_URL` es incorrecta (vea `docker compose logs api`).
+- **Cambié `APP_DB_PASSWORD` y la API ya no conecta**: la contraseña del rol se
+  fija al crear el volumen. Cámbiela también en la base con
+  `docker compose exec db psql -U postgres -d severidad_vial -c "ALTER ROLE app_lectura PASSWORD '<nueva>'"`.
+- **Errores raros (`$'\r'`) al correr los `.sh` en Linux**: el archivo tiene
+  saltos de línea de Windows. `.gitattributes` los fija en LF; vuelva a
+  obtenerlos con `git checkout -- scripts db`.
 
 ## Datos
 

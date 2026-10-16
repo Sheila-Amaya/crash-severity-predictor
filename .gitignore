@@ -160,6 +160,11 @@ venv.bak/
 data/raw/
 data/models/*.pkl
 
+# Docker: semilla de la base (se publica como asset de un GitHub Release) y respaldos
+db/seed/*.dump
+db/seed/*.dump.sha256
+respaldos/
+
 # Frontend (Node / Vite)
 node_modules/
 dist/

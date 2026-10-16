@@ -1,0 +1,61 @@
+# Stack completo: base PostGIS + API FastAPI + nginx con la SPA.
+#
+#   docker compose up -d --build
+#
+# Solo "web" publica un puerto. La API y la base viven en una red interna sin
+# salida a internet. Variables: .env (ver .env.example). Servicios api y web:
+# compose.comun.yml. Modo Supabase: docker-compose.supabase.yml (ver README).
+
+name: severidad-vial
+
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-severidad_vial}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env (ver .env.example)}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Defina APP_DB_PASSWORD en .env (ver .env.example)}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Carga inicial (solo con el volumen vacío): restaura la semilla y crea
+      # el rol de solo lectura. Va como archivo para no ocultar 10_postgis.sh.
+      - ./db/docker/20_semilla.sh:/docker-entrypoint-initdb.d/20_semilla.sh:ro
+      - ./db/seed:/seed:ro
+    networks: [interna]
+    # Sana solo si acepta conexiones Y ya tiene los datos cargados
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d $${POSTGRES_DB} && psql -U postgres -d $${POSTGRES_DB} -tAc 'SELECT 1 FROM fallecido_lesionado LIMIT 1' | grep -q 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+    mem_limit: 512m
+    shm_size: 128m
+
+  api:
+    extends: { file: compose.comun.yml, service: api }
+    environment:
+      # Rol app_lectura: solo SELECT (la API nunca escribe)
+      DB_URL: postgresql+psycopg2://app_lectura:${APP_DB_PASSWORD:?Defina APP_DB_PASSWORD en .env (ver .env.example)}@db:5432/${POSTGRES_DB:-severidad_vial}
+    networks: [interna]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    extends: { file: compose.comun.yml, service: web }
+    networks: [interna, frontal]
+    depends_on:
+      api:
+        condition: service_healthy
+
+networks:
+  # Sin salida a internet: base y API solo hablan entre sí y con nginx
+  interna:
+    internal: true
+  frontal: {}
+
+volumes:
+  pgdata:
