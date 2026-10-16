@@ -1,98 +1,98 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import { BarraFiltros } from '../components/BarraFiltros'
-import { ChipsFiltros } from '../components/ChipsFiltros'
-import { Kpis } from '../components/dashboard/Kpis'
-import { RankingTop } from '../components/dashboard/RankingTop'
-import { SerieTemporal } from '../components/dashboard/SerieTemporal'
-import { Tarjeta } from '../components/ui/Tarjeta'
+import { Insignia } from '../components/mapa/Insignia'
+import { ContenidoDatos, PanelDatos } from '../components/mapa/PanelDatos'
+import { EtiquetaSeccion } from '../components/ui/Editorial'
+import { HojaInferior } from '../components/ui/HojaInferior'
 import { contarFiltros, useFiltros } from '../state/filtros'
 import { useSincronizarUrl } from '../state/useSincronizarUrl'
 
-/** Cajón de filtros para pantallas pequeñas. */
-function CajonFiltros() {
-  const [abierto, setAbierto] = useState(false)
-  const activos = useFiltros((estado) => contarFiltros(estado.filtros))
-  const cerrarRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    if (!abierto) return
-    cerrarRef.current?.focus()
-    const alPresionar = (e: KeyboardEvent) => e.key === 'Escape' && setAbierto(false)
-    document.addEventListener('keydown', alPresionar)
-    return () => document.removeEventListener('keydown', alPresionar)
-  }, [abierto])
-
+/** Fondo del mapa. El mapa MapLibre se monta aquí en la etapa (d). */
+function FondoMapa() {
   return (
-    <div className="lg:hidden">
-      <button
-        type="button"
-        onClick={() => setAbierto(true)}
-        aria-expanded={abierto}
-        aria-controls="cajon-filtros"
-        className="rounded-md bg-boton px-4 py-2 font-semibold text-boton-texto"
-      >
-        Filtros{activos > 0 ? ` (${activos})` : ''}
-      </button>
+    <div
+      aria-hidden="true"
+      className="absolute inset-0 bg-fondo"
+      style={{
+        backgroundImage: 'radial-gradient(var(--c-border) 1px, transparent 1px)',
+        backgroundSize: '22px 22px',
+      }}
+    />
+  )
+}
 
-      {abierto && (
-        <div className="fixed inset-0 z-40 flex" role="dialog" aria-modal="true" aria-label="Filtros">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setAbierto(false)} aria-hidden="true" />
-          <div
-            id="cajon-filtros"
-            className="relative ml-auto flex h-full w-[min(22rem,90vw)] flex-col gap-3 overflow-y-auto bg-fondo p-4 shadow-xl"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="rotulo text-lg font-semibold uppercase">Filtros</h2>
-              <button
-                ref={cerrarRef}
-                type="button"
-                onClick={() => setAbierto(false)}
-                className="rounded-md border border-borde-fuerte px-3 py-1"
-              >
-                Cerrar
-              </button>
-            </div>
-            <BarraFiltros />
-          </div>
-        </div>
-      )}
+/** Hueco de la leyenda (se completa con el mapa en la etapa d). */
+function LeyendaProvisional() {
+  return (
+    <div className="flotante pointer-events-auto w-56 px-3 py-2">
+      <EtiquetaSeccion as="p">Leyenda</EtiquetaSeccion>
+      <p className="mt-1 text-xs text-tenue">Se completa con el mapa (etapa d).</p>
     </div>
   )
 }
 
+type Hoja = 'filtros' | 'datos' | null
+
 export function Panel() {
   useSincronizarUrl()
 
+  const [plegado, setPlegado] = useState(false)
+  const [hoja, setHoja] = useState<Hoja>(null)
+  const activos = useFiltros((estado) => contarFiltros(estado.filtros))
+  // Estable: la hoja enfoca y restaura el foco solo al abrir/cerrar
+  const cerrarHoja = useCallback(() => setHoja(null), [])
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[17rem_minmax(0,1fr)]">
-      <aside className="hidden lg:block" aria-label="Filtros del panel">
-        <div className="sticky top-4 rounded-xl border border-borde bg-tarjeta p-4">
-          <h2 className="rotulo mb-3 text-lg font-semibold uppercase tracking-wide">Filtros</h2>
-          <BarraFiltros />
-        </div>
-      </aside>
+    <div className="absolute inset-0">
+      <FondoMapa />
 
-      <div className="flex min-w-0 flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="rotulo text-3xl font-extrabold uppercase tracking-wide">Panel de siniestralidad</h1>
-          <CajonFiltros />
-        </div>
-        <ChipsFiltros />
-
-        <Kpis />
-
-        <div className="grid gap-4 xl:grid-cols-2">
-          <Tarjeta titulo="Mapa" descripcion="Mapa coroplético (etapa d).">
-            <div className="flex h-80 items-center justify-center rounded-lg border border-dashed border-borde-fuerte text-tenue">
-              Próximamente
-            </div>
-          </Tarjeta>
-          <RankingTop />
+      {/* Capa de paneles: no captura eventos salvo en los paneles (el mapa queda usable) */}
+      <div className="pointer-events-none absolute inset-0 p-3">
+        {/* Escritorio: panel de filtros a la izquierda */}
+        <div className="absolute top-3 bottom-16 left-3 hidden w-72 lg:flex lg:items-start">
+          <div className="flotante pointer-events-auto flex max-h-full w-full flex-col overflow-hidden">
+            <BarraFiltros prefijo="panel-filtro" />
+          </div>
         </div>
 
-        <SerieTemporal />
+        {/* Escritorio: panel de datos a la derecha (deja sitio al zoom del mapa) */}
+        <div className="absolute top-3 right-14 bottom-24 hidden lg:flex lg:items-start">
+          <PanelDatos plegado={plegado} onAlternar={() => setPlegado((v) => !v)} />
+        </div>
+
+        {/* Insignia abajo a la izquierda (sobre la barra de botones en móvil) */}
+        <div className="absolute bottom-16 left-3 lg:bottom-3">
+          <Insignia />
+        </div>
+
+        {/* Leyenda abajo a la derecha */}
+        <div className="absolute right-3 bottom-16 hidden sm:block lg:bottom-3">
+          <LeyendaProvisional />
+        </div>
+
+        {/* Móvil: barra inferior que abre las hojas */}
+        <div className="flotante pointer-events-auto absolute right-3 bottom-3 left-3 grid grid-cols-2 overflow-hidden lg:hidden">
+          <button
+            type="button"
+            onClick={() => setHoja('filtros')}
+            aria-haspopup="dialog"
+            className="border-r border-borde px-3 py-2.5 text-sm font-medium"
+          >
+            Filtros <span className="cifra text-tenue">{activos}/9</span>
+          </button>
+          <button type="button" onClick={() => setHoja('datos')} aria-haspopup="dialog" className="px-3 py-2.5 text-sm font-medium">
+            Datos
+          </button>
+        </div>
       </div>
+
+      <HojaInferior titulo={`Filtros · ${activos}/9`} abierta={hoja === 'filtros'} onCerrar={cerrarHoja}>
+        <BarraFiltros prefijo="hoja-filtro" conCabecera={false} />
+      </HojaInferior>
+      <HojaInferior titulo="Datos" abierta={hoja === 'datos'} onCerrar={cerrarHoja}>
+        <ContenidoDatos />
+      </HojaInferior>
     </div>
   )
 }

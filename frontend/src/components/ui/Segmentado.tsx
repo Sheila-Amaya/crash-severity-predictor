@@ -12,21 +12,18 @@ interface Props<T extends string> {
   onCambio: (valor: T) => void
 }
 
-/** Grupo de botones de radio con aspecto segmentado (accesible con teclado). */
+/** Grupo de radios con aspecto segmentado (accesible con teclado y flechas). */
 export function Segmentado<T extends string>({ etiqueta, opciones, valor, onCambio }: Props<T>) {
   const nombre = useId()
 
   return (
-    <fieldset className="flex items-center gap-2">
+    <fieldset className="min-w-0">
       <legend className="sr-only">{etiqueta}</legend>
-      <span aria-hidden="true" className="text-xs text-tenue">
-        {etiqueta}
-      </span>
-      <div className="flex rounded-lg border border-borde-fuerte p-0.5">
+      <div className="flex rounded-sm border border-borde-fuerte">
         {opciones.map((opcion) => (
           <label
             key={opcion.valor}
-            className="cursor-pointer rounded-md px-2.5 py-1 text-sm transition-colors duration-150 has-checked:bg-boton has-checked:font-semibold has-checked:text-boton-texto has-focus-visible:outline-3 has-focus-visible:outline-foco"
+            className="flex-1 cursor-pointer border-r border-borde-fuerte px-2 py-1 text-center font-mono text-[11px] uppercase tracking-wide text-tenue transition-colors duration-150 last:border-r-0 hover:text-tinta has-checked:bg-boton has-checked:text-boton-texto has-focus-visible:outline-2 has-focus-visible:outline-foco"
           >
             <input
               type="radio"

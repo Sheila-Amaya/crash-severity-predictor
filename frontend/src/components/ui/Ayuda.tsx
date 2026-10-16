@@ -3,6 +3,8 @@ import { useId, type ReactNode } from 'react'
 interface Props {
   /** Texto accesible del disparador. */
   etiqueta: string
+  /** Lado hacia el que se abre (usar 'izquierda' cerca del borde derecho). */
+  hacia?: 'derecha' | 'izquierda'
   children: ReactNode
 }
 
@@ -10,7 +12,7 @@ interface Props {
  * Tooltip accesible: se muestra con el cursor y con el foco del teclado,
  * y el texto queda asociado al botón con aria-describedby.
  */
-export function Ayuda({ etiqueta, children }: Props) {
+export function Ayuda({ etiqueta, hacia = 'derecha', children }: Props) {
   const id = useId()
 
   return (
@@ -19,14 +21,14 @@ export function Ayuda({ etiqueta, children }: Props) {
         type="button"
         aria-label={etiqueta}
         aria-describedby={id}
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-borde-fuerte text-xs font-bold text-tenue"
+        className="inline-flex h-4 w-4 items-center justify-center rounded-sm border border-borde-fuerte font-mono text-[10px] text-tenue"
       >
         ?
       </button>
       <span
         id={id}
         role="tooltip"
-        className="pointer-events-none invisible absolute top-full left-1/2 z-20 mt-2 w-64 -translate-x-1/2 rounded-md border border-borde-fuerte bg-tarjeta p-2 text-left text-xs font-normal normal-case tracking-normal text-tinta opacity-0 shadow-lg transition-opacity duration-150 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100"
+        className={`pointer-events-none invisible absolute top-full ${hacia === 'derecha' ? 'left-0' : 'right-0'} z-30 mt-2 w-60 rounded-sm border border-borde-fuerte bg-panel-2 p-2 text-left font-sans text-xs normal-case tracking-normal text-tinta opacity-0 shadow-lg transition-opacity duration-150 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100`}
       >
         {children}
       </span>

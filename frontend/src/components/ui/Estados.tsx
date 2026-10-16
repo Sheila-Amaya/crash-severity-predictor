@@ -9,7 +9,7 @@ export function Skeleton({ className = '', etiqueta = 'Cargando…' }: SkeletonP
     <div
       role="status"
       aria-label={etiqueta}
-      className={`motion-safe:animate-pulse rounded-lg bg-tarjeta-2 ${className}`}
+      className={`motion-safe:animate-pulse rounded-sm bg-panel-2 ${className}`}
     />
   )
 }
@@ -26,16 +26,13 @@ export function ErrorCarga({
   onReintentar,
 }: ErrorProps) {
   return (
-    <div
-      role="alert"
-      className="flex flex-col items-start gap-2 rounded-lg border border-borde-fuerte bg-tarjeta-2 p-4"
-    >
-      <p className="font-semibold text-peligro">{mensaje}</p>
-      {detalle && <p className="text-sm text-tenue">{detalle}</p>}
+    <div role="alert" className="flex flex-col items-start gap-2 rounded-sm border border-borde-fuerte bg-panel-2 p-3">
+      <p className="text-sm font-semibold text-peligro">{mensaje}</p>
+      {detalle && <p className="text-xs text-tenue">{detalle}</p>}
       <button
         type="button"
         onClick={onReintentar}
-        className="rounded-md bg-boton px-3 py-1.5 text-sm font-semibold text-boton-texto"
+        className="rounded-sm bg-boton px-3 py-1 text-sm font-semibold text-boton-texto"
       >
         Reintentar
       </button>

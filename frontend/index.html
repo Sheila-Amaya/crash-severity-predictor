@@ -6,14 +6,9 @@
     <title>Severidad vial · Guatemala</title>
     <meta name="description" content="Panel de siniestralidad vial y simulador de severidad para Guatemala (INE 2018–2024)." />
     <script>
-      // Evita el destello de tema claro antes de cargar la app.
-      // Colores de fondo = palette.json (bg). El resto lo aplica src/theme/tema.ts.
-      try {
-        var p = localStorage.getItem('tema')
-        var oscuro = p === 'oscuro' || (p !== 'claro' && matchMedia('(prefers-color-scheme: dark)').matches)
-        document.documentElement.dataset.theme = oscuro ? 'dark' : 'light'
-        document.documentElement.style.background = oscuro ? '#1C1A17' : '#F7F3EC'
-      } catch (e) {}
+      // Evita un destello claro antes de cargar la app (bg = palette.json).
+      document.documentElement.dataset.theme = 'dark'
+      document.documentElement.style.background = '#0B0C0E'
     </script>
   </head>
   <body>

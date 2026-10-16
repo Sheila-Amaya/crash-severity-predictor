@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 import { useCatalogos, useRanking } from '../../api/queries'
 import type { FilaRanking, Nivel, OrdenRanking } from '../../api/types'
@@ -7,9 +7,9 @@ import { useDuracionAnimacion } from '../../hooks/movimiento'
 import { useFiltros } from '../../state/filtros'
 import { usePaleta } from '../../theme/tema'
 import { formatoEntero, formatoNulo, formatoPorcentaje } from '../../utils/formato'
+import { EtiquetaSeccion } from '../ui/Editorial'
 import { ErrorCarga, Skeleton } from '../ui/Estados'
 import { Segmentado } from '../ui/Segmentado'
-import { Tarjeta } from '../ui/Tarjeta'
 
 const ORDENES: { valor: OrdenRanking; etiqueta: string }[] = [
   { valor: 'fallecidos', etiqueta: 'Fallecidos' },
@@ -32,21 +32,22 @@ function TooltipRanking({ active, payload }: { active?: boolean; payload?: { pay
   const fila = payload[0].payload
 
   return (
-    <div className="rounded-md border border-borde-fuerte bg-tarjeta p-2 text-sm shadow-lg">
-      <p className="rotulo font-semibold">
+    <div className="rounded-sm border border-borde-fuerte bg-panel-2 p-2 text-xs shadow-lg">
+      <p className="font-semibold">
         {fila.posicion}. {fila.nombre}
       </p>
-      <p>Hechos: {formatoNulo(fila.hechos, formatoEntero)}</p>
-      <p>Víctimas: {formatoEntero(fila.victimas)}</p>
-      <p>Fallecidos: {formatoEntero(fila.fallecidos)}</p>
-      <p className="font-semibold">Letalidad: {formatoNulo(fila.letalidad, formatoPorcentaje)}</p>
-      <p className="mt-1 text-xs text-tenue">Clic para filtrar el panel</p>
+      <p className="cifra text-tenue">Hechos {formatoNulo(fila.hechos, formatoEntero)}</p>
+      <p className="cifra text-tenue">Víctimas {formatoEntero(fila.victimas)}</p>
+      <p className="cifra text-tenue">Fallecidos {formatoEntero(fila.fallecidos)}</p>
+      <p className="cifra">Letalidad {formatoNulo(fila.letalidad, formatoPorcentaje)}</p>
+      <p className="etiqueta mt-1 text-[10px]">Clic para filtrar</p>
     </div>
   )
 }
 
 export function RankingTop() {
   const filtros = useFiltros((estado) => estado.filtros)
+  const setFiltro = useFiltros((estado) => estado.setFiltro)
   const hayDepto = filtros.depto !== undefined
   const [nivel, setNivel] = useState<Nivel>(hayDepto ? 'municipio' : 'depto')
   const [orden, setOrden] = useState<OrdenRanking>('fallecidos')
@@ -55,7 +56,7 @@ export function RankingTop() {
   useEffect(() => {
     setNivel(hayDepto ? 'municipio' : 'depto')
   }, [hayDepto])
-  const setFiltro = useFiltros((estado) => estado.setFiltro)
+
   const { data, isPending, isError, refetch, isFetching } = useRanking(filtros, nivel, orden)
   const { data: catalogos } = useCatalogos()
   const paleta = usePaleta()
@@ -71,73 +72,65 @@ export function RankingTop() {
     valor: valorDe(fila, orden),
   }))
 
-  const seleccionar = (fila: FilaRanking) =>
-    setFiltro(nivel === 'depto' ? 'depto' : 'municipio', fila.codigo)
+  const seleccionar = (fila: FilaRanking) => setFiltro(nivel === 'depto' ? 'depto' : 'municipio', fila.codigo)
 
   return (
-    <Tarjeta
-      titulo="Top 10"
-      descripcion={`${nivel === 'depto' ? 'Departamentos' : 'Municipios'} con más ${
-        orden === 'letalidad' ? 'letalidad' : orden
-      }.`}
-      acciones={
-        <>
-          <Segmentado etiqueta="Nivel" opciones={NIVELES} valor={nivel} onCambio={setNivel} />
-          <Segmentado etiqueta="Ordenar" opciones={ORDENES} valor={orden} onCambio={setOrden} />
-        </>
-      }
-    >
+    <section aria-labelledby="ranking-titulo" className="flex flex-col gap-2.5">
+      <EtiquetaSeccion as="h3" id="ranking-titulo" derecha={nivel === 'depto' ? 'Depto.' : 'Municipio'}>
+        Top 10
+      </EtiquetaSeccion>
+      <div className="flex flex-col gap-2">
+        <Segmentado etiqueta="Nivel del ranking" opciones={NIVELES} valor={nivel} onCambio={setNivel} />
+        <Segmentado etiqueta="Ordenar ranking por" opciones={ORDENES} valor={orden} onCambio={setOrden} />
+      </div>
+
       {isPending ? (
-        <Skeleton className="h-80" etiqueta="Cargando ranking…" />
+        <Skeleton className="h-64" etiqueta="Cargando ranking…" />
       ) : isError ? (
         <ErrorCarga mensaje="No se pudo cargar el ranking." onReintentar={refetch} />
       ) : filas.length === 0 ? (
-        <p className="py-10 text-center text-tenue">Sin víctimas con estos filtros.</p>
+        <p className="py-8 text-center text-sm text-tenue">Sin víctimas con estos filtros.</p>
       ) : (
         <>
-          <div className={`h-80 transition-opacity duration-200 ${isFetching ? 'opacity-70' : ''}`}>
+          <div className={`h-64 transition-opacity duration-200 ${isFetching ? 'opacity-60' : ''}`}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={filas} layout="vertical" margin={{ top: 0, right: 64, bottom: 0, left: 0 }}>
+              <BarChart data={filas} layout="vertical" margin={{ top: 0, right: 52, bottom: 0, left: 0 }}>
                 <XAxis type="number" hide />
                 <YAxis
                   type="category"
                   dataKey="etiqueta"
-                  width={nivel === 'municipio' ? 170 : 120}
-                  tick={{ fill: paleta.text, fontSize: 12 }}
-                  stroke={paleta.borderStrong}
+                  width={nivel === 'municipio' && !hayDepto ? 150 : 108}
+                  tick={{ fill: paleta.text, fontSize: 11 }}
+                  stroke={paleta.border}
+                  tickLine={false}
                   interval={0}
                 />
                 <Tooltip content={<TooltipRanking />} cursor={{ fill: paleta.surface2 }} />
                 <Bar
                   dataKey="valor"
-                  name={ORDENES.find((o) => o.valor === orden)?.etiqueta}
-                  radius={[0, 4, 4, 0]}
+                  fill={orden === 'victimas' ? paleta.serieLesionados : paleta.serieFallecidos}
+                  radius={[0, 2, 2, 0]}
+                  barSize={14}
                   onClick={(entrada) => seleccionar(entrada as unknown as FilaRanking)}
                   className="cursor-pointer"
                   animationDuration={duracion}
                   isAnimationActive={duracion > 0}
                 >
-                  {filas.map((fila) => (
-                    <Cell
-                      key={fila.codigo}
-                      fill={orden === 'victimas' ? paleta.serieLesionados : paleta.serieFallecidos}
-                    />
-                  ))}
                   <LabelList
                     dataKey="valor"
                     position="right"
                     formatter={(v: number) => formatoDe(orden)(v)}
-                    style={{ fill: paleta.text, fontSize: 12, fontWeight: 600 }}
+                    style={{ fill: paleta.text, fontSize: 11, fontFamily: 'JetBrains Mono Variable, monospace' }}
                   />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
-          {/* Alternativa accesible al clic en las barras */}
-          <ol className="sr-only flex-col gap-1 text-sm focus-within:not-sr-only focus-within:flex">
+          {/* Alternativa accesible al clic en las barras (visible al recibir foco) */}
+          <ol className="sr-only flex-col gap-1 text-xs focus-within:not-sr-only focus-within:flex">
             {filas.map((fila) => (
               <li key={fila.codigo}>
-                <button type="button" onClick={() => seleccionar(fila)}>
+                <button type="button" onClick={() => seleccionar(fila)} className="underline">
                   Filtrar por {fila.etiqueta}: {formatoDe(orden)(fila.valor)}
                 </button>
               </li>
@@ -145,6 +138,6 @@ export function RankingTop() {
           </ol>
         </>
       )}
-    </Tarjeta>
+    </section>
   )
 }
