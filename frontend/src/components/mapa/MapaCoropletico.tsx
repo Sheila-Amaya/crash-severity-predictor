@@ -28,7 +28,8 @@ import { formatoEntero, formatoNulo, formatoPorcentaje } from '../../utils/forma
 import { cajaEnvolvente, centroide, radioBurbuja, radioMaximo } from '../../utils/geometria'
 import { ErrorCarga } from '../ui/Estados'
 import { useClasificacionMapa } from './useClasificacionMapa'
-// Contexto: Natural Earth 1:50m (dominio público), recortado (scripts/contexto_natural_earth.py)
+// Contexto: Natural Earth (dominio público), recortado con scripts/contexto_natural_earth.py.
+// 1:50m de la región en el bundle; el 1:10m alrededor de Guatemala se carga en diferido.
 import contextoRegion from '../../data/contexto-region.json'
 
 setWorkerUrl(urlWorkerMapLibre)
@@ -85,8 +86,9 @@ const claveEncuadreDe = (nivel: Nivel, depto?: number, municipio?: number, vista
 
 const vacio = (): GeoJSON.FeatureCollection => ({ type: 'FeatureCollection', features: [] })
 
-// Región del contexto y retícula de 1° (generada aquí, sin descargas)
-const REGION = { oeste: -95, este: -83, sur: 8, norte: 20 }
+// Región del contexto (= límites de navegación) y retícula de 1° (generada aquí)
+const REGION = { oeste: -100, este: -76, sur: 5, norte: 24 }
+const ZOOM_DETALLE = 7.5 // a partir de aquí (departamento o más cerca) se carga el 1:10m
 const MERIDIANOS = Array.from({ length: REGION.este - REGION.oeste + 1 }, (_, i) => REGION.oeste + i)
 const PARALELOS = Array.from({ length: REGION.norte - REGION.sur + 1 }, (_, i) => REGION.sur + i)
 
@@ -106,6 +108,17 @@ const reticula = (): GeoJSON.FeatureCollection<GeoJSON.LineString> => ({
   ],
 })
 
+/**
+ * Filtro de las capas de contexto. Tierra: todos los países (Guatemala incluida,
+ * como base bajo IDEG). Costa: sin Guatemala. Frontera: sin los tramos junto a
+ * Guatemala (gtm), donde dibuja IDEG.
+ */
+function filtroContexto(tipo: 'tierra' | 'costa' | 'frontera'): ExpressionSpecification {
+  if (tipo === 'tierra') return ['==', ['get', 'capa'], 'pais']
+  if (tipo === 'costa') return ['all', ['==', ['get', 'capa'], 'pais'], ['!=', ['get', 'iso'], 'GTM']]
+  return ['all', ['==', ['get', 'capa'], 'frontera'], ['!=', ['get', 'gtm'], true]]
+}
+
 /** Etiquetas de contexto (países vecinos y mares), en mayúsculas y apagadas. */
 const ETIQUETAS_CONTEXTO: { texto: string; lngLat: [number, number] }[] = [
   { texto: 'México', lngLat: [-92.6, 17.55] },
@@ -113,8 +126,14 @@ const ETIQUETAS_CONTEXTO: { texto: string; lngLat: [number, number] }[] = [
   { texto: 'Honduras', lngLat: [-87.1, 14.8] },
   { texto: 'El Salvador', lngLat: [-88.95, 13.85] },
   { texto: 'Nicaragua', lngLat: [-85.6, 12.9] },
+  { texto: 'Costa Rica', lngLat: [-84.15, 10.0] },
+  { texto: 'Panamá', lngLat: [-80.3, 8.55] },
+  { texto: 'Colombia', lngLat: [-76.7, 6.4] },
+  { texto: 'Cuba', lngLat: [-79.6, 22.05] },
+  { texto: 'Jamaica', lngLat: [-77.3, 18.25] },
+  { texto: 'Islas de la Bahía', lngLat: [-86.35, 16.55] },
   { texto: 'Océano Pacífico', lngLat: [-91.4, 13.1] },
-  { texto: 'Mar Caribe', lngLat: [-87.4, 16.9] },
+  { texto: 'Mar Caribe', lngLat: [-82.5, 15.6] },
 ]
 
 const formatoLon = (lon: number) => `${Math.abs(lon)}°O`
@@ -260,6 +279,12 @@ export function MapaCoropletico() {
       attributionControl: false,
       dragRotate: false,
       maxPitch: 60,
+      // No se puede alejar ni desplazar fuera de la región con contexto
+      maxBounds: [
+        [REGION.oeste, REGION.sur],
+        [REGION.este, REGION.norte],
+      ],
+      minZoom: 4,
     })
     mapa.touchZoomRotate.disableRotation()
     mapa.addControl(new NavigationControl({ showCompass: false }), 'bottom-right')
@@ -360,23 +385,55 @@ export function MapaCoropletico() {
       // -- Contexto (por debajo de todo lo de IDEG) ------------------------
       mapa.addSource('region', { type: 'geojson', data: contextoRegion as unknown as GeoJSON.FeatureCollection })
       mapa.addSource('reticula', { type: 'geojson', data: reticula() })
-      const esPais: ExpressionSpecification = ['==', ['get', 'capa'], 'pais']
-      mapa.addLayer({ id: 'region-tierra', type: 'fill', source: 'region', filter: esPais, paint: { 'fill-color': paleta.mapLand } })
+      // Guatemala (Natural Earth) es tierra de base bajo IDEG: sin costa propia y sin
+      // los tramos de frontera junto a ella (ahí manda el límite de IDEG)
+      mapa.addLayer({ id: 'region-tierra', type: 'fill', source: 'region', filter: filtroContexto('tierra'), paint: { 'fill-color': paleta.mapLand } })
       mapa.addLayer({ id: 'reticula', type: 'line', source: 'reticula', paint: { 'line-color': paleta.mapGrid, 'line-width': 0.6 } })
       mapa.addLayer({
         id: 'region-costa',
         type: 'line',
         source: 'region',
-        filter: esPais,
+        filter: filtroContexto('costa'),
         paint: { 'line-color': paleta.mapCoast, 'line-width': 0.7 },
       })
       mapa.addLayer({
         id: 'region-fronteras',
         type: 'line',
         source: 'region',
-        filter: ['==', ['get', 'capa'], 'frontera'],
+        filter: filtroContexto('frontera'),
         paint: { 'line-color': paleta.mapBorder, 'line-width': 0.9, 'line-dasharray': [3, 2.5] },
       })
+
+      // -- Detalle 1:10m alrededor de Guatemala, en diferido al acercar ---
+      let detalleCargado = false
+      const cargarDetalle = () => {
+        if (detalleCargado || mapa.getZoom() < ZOOM_DETALLE) return
+        detalleCargado = true
+        import('../../data/contexto-detalle.json')
+          .then(({ default: detalle }) => {
+            if (!mapa.getStyle()) return
+            mapa.addSource('detalle', { type: 'geojson', data: detalle as unknown as GeoJSON.FeatureCollection })
+            mapa.addLayer({ id: 'detalle-tierra', type: 'fill', source: 'detalle', filter: filtroContexto('tierra'), paint: { 'fill-color': paleta.mapLand } }, 'reticula')
+            mapa.addLayer({ id: 'detalle-costa', type: 'line', source: 'detalle', filter: filtroContexto('costa'), paint: { 'line-color': paleta.mapCoast, 'line-width': 0.7 } }, 'region-fronteras')
+            mapa.addLayer({
+              id: 'detalle-fronteras',
+              type: 'line',
+              source: 'detalle',
+              filter: filtroContexto('frontera'),
+              paint: { 'line-color': paleta.mapBorder, 'line-width': 0.9, 'line-dasharray': [3, 2.5] },
+            }, 'areas-relleno')
+            // El 1:50m de esa zona deja paso al 1:10m
+            for (const [capa, tipo] of [['region-tierra', 'tierra'], ['region-costa', 'costa'], ['region-fronteras', 'frontera']] as const) {
+              mapa.setFilter(capa, ['all', filtroContexto(tipo), ['!=', ['get', 'detalle'], true]])
+            }
+          })
+          .catch((error) => {
+            detalleCargado = false
+            console.error(error)
+          })
+      }
+      mapa.on('zoomend', cargarDetalle)
+      cargarDetalle()
 
       mapa.addLayer({ id: 'areas-relleno', type: 'fill', source: 'areas', paint: { 'fill-color': paleta.text, 'fill-opacity': 0.05 } })
       mapa.addLayer({

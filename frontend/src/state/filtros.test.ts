@@ -86,6 +86,10 @@ describe('sanearFiltros', () => {
     expect(sanearFiltros({ depto: 2, municipio: 101 }, CATALOGOS)).toEqual({ depto: 2 })
   })
 
+  it('un municipio sin departamento fija su departamento', () => {
+    expect(sanearFiltros({ municipio: 201 }, CATALOGOS)).toEqual({ municipio: 201, depto: 2 })
+  })
+
   it('conserva códigos "Ignorado" válidos para filtrar', () => {
     expect(sanearFiltros({ tipo_eve: 99, sexo: 9 }, CATALOGOS)).toEqual({ tipo_eve: 99, sexo: 9 })
   })

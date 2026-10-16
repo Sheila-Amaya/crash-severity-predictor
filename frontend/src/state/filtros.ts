@@ -61,7 +61,11 @@ export function paramsConFiltros(params: URLSearchParams, filtros: Filtros): URL
   return siguiente
 }
 
-/** Quita códigos que no existen en los catálogos y municipios fuera del departamento. */
+/**
+ * Quita códigos que no existen en los catálogos y municipios fuera del
+ * departamento. Un municipio sin departamento (p. ej. un enlace a mano) fija
+ * su departamento, igual que al elegirlo en la interfaz.
+ */
 export function sanearFiltros(filtros: Filtros, catalogos: Catalogos): Filtros {
   const saneados: Filtros = {}
 
@@ -77,6 +81,10 @@ export function sanearFiltros(filtros: Filtros, catalogos: Catalogos): Filtros {
     deptoDeMunicipio(saneados.municipio) !== saneados.depto
   ) {
     delete saneados.municipio
+  }
+
+  if (saneados.municipio !== undefined && saneados.depto === undefined) {
+    saneados.depto = deptoDeMunicipio(saneados.municipio)
   }
 
   return saneados
