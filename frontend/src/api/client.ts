@@ -15,9 +15,19 @@ import type {
 } from './types'
 import { FILTRO_KEYS } from './types'
 
-// En desarrollo se usa el proxy de Vite (/api en el mismo origen).
-// En producción, VITE_API_URL apunta a la API.
-const BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL ?? '')
+/**
+ * Origen de la API.
+ * - Desarrollo: '' (mismo origen); el proxy de Vite reenvía /api a
+ *   VITE_API_URL (por defecto http://localhost:8000), sin CORS.
+ * - Producción: VITE_API_URL, fijada al compilar (p. ej. https://api.ejemplo.org).
+ *   Vacía = mismo origen, para servir la API detrás del mismo dominio.
+ */
+export function urlBaseApi(desarrollo: boolean, url: string | undefined): string {
+  if (desarrollo) return ''
+  return (url ?? '').trim().replace(/\/+$/, '')
+}
+
+const BASE_URL = urlBaseApi(import.meta.env.DEV, import.meta.env.VITE_API_URL)
 
 export class ApiError extends Error {
   readonly status: number

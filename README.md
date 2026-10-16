@@ -2,7 +2,11 @@
 Machine learning system for predicting traffic crash severity in Guatemala using INE microdata (2018-2024).
 
 API REST (FastAPI + PostgreSQL/PostGIS) con estadísticas, mapas y un modelo
-Random Forest que clasifica la severidad de una víctima (fallecido o lesionado).
+Random Forest que clasifica la severidad de una víctima (fallecido o lesionado),
+y una aplicación web (React + MapLibre, en `frontend/`) con el mapa, el
+simulador y la página "Acerca de".
+
+![Mapa de víctimas por departamento](docs/capturas/mapa.webp)
 
 ## Instalación
 
@@ -44,6 +48,30 @@ uvicorn core.app:app --reload
 Documentación interactiva: `http://localhost:8000/docs`.
 
 En Windows, `.\dev.ps1` abre dos ventanas de PowerShell: la API (con el `.venv` activado) y el frontend (`npm run dev`, en `http://localhost:5173`).
+
+### Frontend
+
+Requisitos: Node.js 20, 22 o 24+.
+
+```bash
+cd frontend
+npm install
+cp .env.example .env     # VITE_API_URL=http://localhost:8000 (sin secretos)
+npm run dev              # http://localhost:5173, con proxy de /api hacia la API
+```
+
+| Página | Qué muestra |
+|---|---|
+| `/` Mapa | Víctimas por departamento o municipio (burbujas, áreas o 3D), filtros, KPIs, ranking y evolución. |
+| `/simulador` | Estima si una víctima resultaría fallecida o lesionada y explica los 3 factores que más pesaron (SHAP). |
+| `/acerca` | Origen de los datos, flujo del sistema, métricas del modelo (Tabla I) y uso responsable. |
+
+| Simulador | Tema claro | Móvil |
+|---|---|---|
+| ![Simulador con resultado](docs/capturas/simulador.webp) | ![Mapa en tema claro](docs/capturas/mapa-claro.webp) | ![Mapa en móvil](docs/capturas/mapa-movil.webp) |
+
+Instalación completa, variables, scripts, compilación para producción y
+problemas frecuentes: [frontend/README.md](frontend/README.md).
 
 ### Pruebas
 
