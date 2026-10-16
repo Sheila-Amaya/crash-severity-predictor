@@ -1,20 +1,27 @@
 import { NavLink, Route, Routes } from 'react-router-dom'
 
-import { useCatalogos } from './api/queries'
+import { useResumen } from './api/queries'
+import { BarraFiltros } from './components/BarraFiltros'
+import { useFiltros } from './state/filtros'
+import { useSincronizarUrl } from './state/useSincronizarUrl'
 
-// Estructura base (etapa a). Las páginas se construyen en las etapas c–f.
+// Estructura base. El dashboard, el mapa, el simulador y "Acerca de" se
+// construyen en las etapas c–f.
 
-function EstadoApi() {
-  const { isPending, isError, error, data } = useCatalogos()
+function Panel() {
+  useSincronizarUrl()
 
-  if (isPending) return <p>Conectando con la API…</p>
-  if (isError) return <p role="alert">Sin conexión con la API: {error.message}</p>
+  const filtros = useFiltros((estado) => estado.filtros)
+  const resumen = useResumen(filtros)
 
   return (
-    <p>
-      API conectada: {data.anio.length} años, {data.depto.length} departamentos,{' '}
-      {data.municipio.length} municipios.
-    </p>
+    <section>
+      <h1>Panel</h1>
+      <BarraFiltros />
+      <pre aria-live="polite">
+        {resumen.isError ? resumen.error.message : JSON.stringify(resumen.data ?? null, null, 2)}
+      </pre>
+    </section>
   )
 }
 
@@ -22,7 +29,6 @@ function Pendiente({ titulo }: { titulo: string }) {
   return (
     <section>
       <h1>{titulo}</h1>
-      <EstadoApi />
     </section>
   )
 }
@@ -36,7 +42,7 @@ export default function App() {
       </nav>
       <main>
         <Routes>
-          <Route path="/" element={<Pendiente titulo="Panel" />} />
+          <Route path="/" element={<Panel />} />
           <Route path="/simulador" element={<Pendiente titulo="Simulador" />} />
           <Route path="/acerca" element={<Pendiente titulo="Acerca de" />} />
         </Routes>
