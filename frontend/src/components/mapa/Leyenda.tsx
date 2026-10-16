@@ -59,8 +59,8 @@ export function Leyenda({ ancho = 'w-[22rem]' }: { ancho?: string }) {
       )}
 
       <div className="mt-2 flex flex-wrap items-end gap-x-4 gap-y-2">
-        {/* Color: quintiles relativos */}
-        <div className="min-w-0 flex-1">
+        {/* Color: quintiles relativos (fila completa) */}
+        <div className="w-full min-w-0">
           <p className="mb-1 text-[10.5px] text-tinta">Color: {metrica === 'letalidad' ? 'letalidad' : 'víctimas'}</p>
           <ol
             className="grid gap-0.5"

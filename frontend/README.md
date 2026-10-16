@@ -19,6 +19,16 @@ npm run build && npm run lint && npm test && npm run contraste
   de uso no están indicados en los archivos** y deben confirmarse con IDEG antes
   de publicar.
 - La API sirve esas geometrías simplificadas (`/api/mapa/coropletico`).
+- **Contexto geográfico (países vecinos, costa y fronteras):** Natural Earth
+  1:50m v5.1.2, `ne_50m_admin_0_countries` y
+  `ne_50m_admin_0_boundary_lines_land`. Licencia: **dominio público** ("All
+  versions of Natural Earth raster + vector map data found on this website are
+  in the public domain", https://www.naturalearthdata.com/about/terms-of-use/).
+  Recortado a la región (lon −95 a −83, lat 8 a 20), simplificado y guardado en
+  `src/data/contexto-region.json` (~18 KB) con `scripts/contexto_natural_earth.py`;
+  se incluye en el bundle (ninguna descarga en tiempo de ejecución). Made with
+  Natural Earth.
+- La retícula de latitud/longitud se genera en el propio código.
 - **Sin mapa base externo:** el mapa usa un fondo liso y no descarga teselas ni
   requiere claves, por lo que funciona sin internet.
 - Las burbujas se ubican en el centroide de cada polígono: son un **resumen por

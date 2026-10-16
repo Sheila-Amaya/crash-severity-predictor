@@ -45,6 +45,9 @@ const PARES = [
   ['serieLetalidad', 'surface', GRAFICO, 'Serie letalidad / panel'],
   ['mapLabel', 'bg', TEXTO, 'Etiqueta de departamento / fondo del mapa'],
   ['mapBubbleStroke', 'bg', GRAFICO, 'Borde de burbuja / fondo del mapa'],
+  ['mapContextLabel', 'bg', TEXTO, 'Etiqueta de contexto (país, mar, coordenadas) / mar'],
+  ['mapContextLabel', 'mapLand', TEXTO, 'Etiqueta de contexto / tierra vecina'],
+  ['mapLabel', 'mapLand', TEXTO, 'Etiqueta de departamento / tierra'],
   ['mapNullDot', 'bg', GRAFICO, 'Punto "sin víctimas" / fondo del mapa'],
   ['mapLineStrong', 'bg', 1, 'Límite resaltado (decorativo) / fondo'],
 ]
@@ -75,6 +78,13 @@ for (const [tema, p] of Object.entries(palette)) {
     console.log(`info  ${contraste(p.mapBubbleStroke, color).toFixed(2).padStart(5)}:1 Borde de burbuja / ${nombre}  [${color}]`)
   }
   console.log(`info  ${contraste(p.mapLine, p.bg).toFixed(2).padStart(5)}:1 Límite tenue (decorativo, blanco ~0.18) / fondo`)
+  // Contexto (decorativo, por debajo de IDEG): tierra, costa, fronteras y retícula
+  for (const [clave, nombre] of [['mapLand', 'Tierra vecina'], ['mapCoast', 'Costa'], ['mapBorder', 'Frontera internacional (punteada)'], ['mapGrid', 'Retícula (blanco ~0.05)']]) {
+    console.log(`info  ${contraste(p[clave], p.bg).toFixed(2).padStart(5)}:1 ${nombre} (decorativo) / mar`)
+  }
+  const jerarquia = contraste(p.mapLine, p.bg) > contraste(p.mapBorder, p.bg) && contraste(p.mapBorder, p.bg) > contraste(p.mapGrid, p.bg)
+  if (!jerarquia) fallos++
+  console.log(`${jerarquia ? 'OK  ' : 'FALLA'} Jerarquía: límites IDEG > fronteras de contexto > retícula`)
 
   // Cifra dentro de la burbuja: clara sobre las clases 1-2, oscura sobre 3-5
   p.mapScale.forEach((color, i) => {

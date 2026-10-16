@@ -28,6 +28,8 @@ import { formatoEntero, formatoNulo, formatoPorcentaje } from '../../utils/forma
 import { cajaEnvolvente, centroide, radioBurbuja, radioMaximo } from '../../utils/geometria'
 import { ErrorCarga } from '../ui/Estados'
 import { useClasificacionMapa } from './useClasificacionMapa'
+// Contexto: Natural Earth 1:50m (dominio público), recortado (scripts/contexto_natural_earth.py)
+import contextoRegion from '../../data/contexto-region.json'
 
 setWorkerUrl(urlWorkerMapLibre)
 
@@ -82,6 +84,41 @@ const claveEncuadreDe = (nivel: Nivel, depto?: number, municipio?: number, vista
   `${nivel}|${depto ?? ''}|${municipio ?? ''}|${vista === '3d' ? '3d' : '2d'}`
 
 const vacio = (): GeoJSON.FeatureCollection => ({ type: 'FeatureCollection', features: [] })
+
+// Región del contexto y retícula de 1° (generada aquí, sin descargas)
+const REGION = { oeste: -95, este: -83, sur: 8, norte: 20 }
+const MERIDIANOS = Array.from({ length: REGION.este - REGION.oeste + 1 }, (_, i) => REGION.oeste + i)
+const PARALELOS = Array.from({ length: REGION.norte - REGION.sur + 1 }, (_, i) => REGION.sur + i)
+
+const reticula = (): GeoJSON.FeatureCollection<GeoJSON.LineString> => ({
+  type: 'FeatureCollection',
+  features: [
+    ...MERIDIANOS.map((lon) => ({
+      type: 'Feature' as const,
+      properties: {},
+      geometry: { type: 'LineString' as const, coordinates: [[lon, REGION.sur], [lon, REGION.norte]] },
+    })),
+    ...PARALELOS.map((lat) => ({
+      type: 'Feature' as const,
+      properties: {},
+      geometry: { type: 'LineString' as const, coordinates: [[REGION.oeste, lat], [REGION.este, lat]] },
+    })),
+  ],
+})
+
+/** Etiquetas de contexto (países vecinos y mares), en mayúsculas y apagadas. */
+const ETIQUETAS_CONTEXTO: { texto: string; lngLat: [number, number] }[] = [
+  { texto: 'México', lngLat: [-92.6, 17.55] },
+  { texto: 'Belice', lngLat: [-88.75, 17.25] },
+  { texto: 'Honduras', lngLat: [-87.1, 14.8] },
+  { texto: 'El Salvador', lngLat: [-88.95, 13.85] },
+  { texto: 'Nicaragua', lngLat: [-85.6, 12.9] },
+  { texto: 'Océano Pacífico', lngLat: [-91.4, 13.1] },
+  { texto: 'Mar Caribe', lngLat: [-87.4, 16.9] },
+]
+
+const formatoLon = (lon: number) => `${Math.abs(lon)}°O`
+const formatoLat = (lat: number) => `${lat}°N`
 
 const esPantallaPequena = () => window.matchMedia('(max-width: 1023px)').matches
 
@@ -144,6 +181,7 @@ export function MapaCoropletico() {
   const etiquetas = useRef<EtiquetaMapa[]>([])
   const objetivo = useRef<Caja4>(GUATEMALA)
   const recolocar = useRef<() => void>(() => {})
+  const coordenadas = useRef<{ lon: HTMLElement[]; lat: HTMLElement[] }>({ lon: [], lat: [] })
   const [listo, setListo] = useState(false)
   const [hover, setHover] = useState<Hover | null>(null)
 
@@ -271,8 +309,39 @@ export function MapaCoropletico() {
         lista.forEach((e, i) => {
           e.elemento.style.visibility = visibles[i] ? 'visible' : 'hidden'
         })
+
+        // Coordenadas en los bordes del mapa: longitud arriba, latitud a la izquierda
+        const centro = mapa.getCenter()
+        // Paneles con 12 px de holgura: las coordenadas no quedan pegadas a ellos
+        const sinPaneles = bloqueos
+          .slice(0, -4)
+          .map((b) => ({ left: b.left - 12, right: b.right + 12, top: b.top - 12, bottom: b.bottom + 12 }))
+        const colocar = (el: HTMLElement, x: number, y: number) => {
+          const ancho = el.offsetWidth || 28
+          const caja = { left: x - ancho / 2, right: x + ancho / 2, top: y - 6, bottom: y + 6 }
+          const dentro = caja.left > 2 && caja.right < w - 2 && caja.top > 2 && caja.bottom < h - 2
+          const libre = dentro && !sinPaneles.some((b) => caja.left < b.right && b.left < caja.right && caja.top < b.bottom && b.top < caja.bottom)
+          el.style.transform = `translate(${x - ancho / 2}px, ${y - 6}px)`
+          el.style.visibility = libre ? 'visible' : 'hidden'
+        }
+        coordenadas.current.lon.forEach((el, i) => colocar(el, mapa.project([MERIDIANOS[i], centro.lat]).x, 10))
+        coordenadas.current.lat.forEach((el, i) => colocar(el, 22, mapa.project([centro.lng, PARALELOS[i]]).y))
       })
     }
+    // Spans de coordenadas (DOM propio, sin re-render de React al mover)
+    const capaCoordenadas = document.createElement('div')
+    capaCoordenadas.className = 'capa-coordenadas'
+    capaCoordenadas.setAttribute('aria-hidden', 'true')
+    const crear = (texto: string) => {
+      const el = document.createElement('span')
+      el.className = 'coordenada-mapa'
+      el.textContent = texto
+      capaCoordenadas.appendChild(el)
+      return el
+    }
+    coordenadas.current = { lon: MERIDIANOS.map((l) => crear(formatoLon(l))), lat: PARALELOS.map((l) => crear(formatoLat(l))) }
+    mapa.getContainer().appendChild(capaCoordenadas)
+
     mapa.on('move', recolocarEtiquetas)
     recolocar.current = recolocarEtiquetas
 
@@ -287,6 +356,27 @@ export function MapaCoropletico() {
       const sinVictimas: ExpressionSpecification = ['==', ['get', 'clase'], 0]
       // Pequeñas encima de las grandes
       const ordenRadio: ExpressionSpecification = ['-', 0, ['get', 'radio']]
+
+      // -- Contexto (por debajo de todo lo de IDEG) ------------------------
+      mapa.addSource('region', { type: 'geojson', data: contextoRegion as unknown as GeoJSON.FeatureCollection })
+      mapa.addSource('reticula', { type: 'geojson', data: reticula() })
+      const esPais: ExpressionSpecification = ['==', ['get', 'capa'], 'pais']
+      mapa.addLayer({ id: 'region-tierra', type: 'fill', source: 'region', filter: esPais, paint: { 'fill-color': paleta.mapLand } })
+      mapa.addLayer({ id: 'reticula', type: 'line', source: 'reticula', paint: { 'line-color': paleta.mapGrid, 'line-width': 0.6 } })
+      mapa.addLayer({
+        id: 'region-costa',
+        type: 'line',
+        source: 'region',
+        filter: esPais,
+        paint: { 'line-color': paleta.mapCoast, 'line-width': 0.7 },
+      })
+      mapa.addLayer({
+        id: 'region-fronteras',
+        type: 'line',
+        source: 'region',
+        filter: ['==', ['get', 'capa'], 'frontera'],
+        paint: { 'line-color': paleta.mapBorder, 'line-width': 0.9, 'line-dasharray': [3, 2.5] },
+      })
 
       mapa.addLayer({ id: 'areas-relleno', type: 'fill', source: 'areas', paint: { 'fill-color': paleta.text, 'fill-opacity': 0.05 } })
       mapa.addLayer({
@@ -595,6 +685,15 @@ export function MapaCoropletico() {
       el.textContent = f.properties.nombre
       const marcador = nuevo(punto, el, -(radio + SEPARACION_ETIQUETA))
       etiquetas.current.push({ marcador, elemento: el, lngLat: punto, burbuja: i, radio })
+    }
+
+    // Países vecinos y mares (menor prioridad que los departamentos)
+    for (const { texto, lngLat } of ETIQUETAS_CONTEXTO) {
+      const el = document.createElement('span')
+      el.className = 'etiqueta-contexto'
+      el.textContent = texto
+      const marcador = nuevo(lngLat, el)
+      etiquetas.current.push({ marcador, elemento: el, lngLat, burbuja: -1, radio: -SEPARACION_ETIQUETA })
     }
 
     // Cifras nítidas dentro de las burbujas grandes (HTML, sin difuminado)

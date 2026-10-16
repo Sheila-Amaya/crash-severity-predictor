@@ -138,6 +138,35 @@
     }
   }
 
+  .etiqueta-contexto,
+  .coordenada-mapa {
+    pointer-events: none;
+    font-family: var(--font-mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-map-context-label);
+    white-space: nowrap;
+  }
+
+  .etiqueta-contexto {
+    font-size: 9px;
+  }
+
+  .capa-coordenadas {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .coordenada-mapa {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 8.5px;
+    letter-spacing: 0.06em;
+  }
+
   .cifra-burbuja {
     pointer-events: none;
     font-family: var(--font-mono);
