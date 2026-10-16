@@ -1,6 +1,6 @@
 import { EsquemaFlujo, EtiquetaSeccion, ListaRecuadro, SeccionEditorial } from '../components/ui/Editorial'
 import { useTituloPagina } from '../hooks/useTituloPagina'
-import { AUTORA, CREDITO, REPOSITORIO } from '../proyecto'
+import { REPOSITORIO } from '../proyecto'
 
 // Cifras de la base migrada (INE 2018–2024, verificadas contra la API) y de la
 // Tabla I del paper (modelo v1, conjunto de prueba).
@@ -143,19 +143,14 @@ export function Acerca() {
         />
       </SeccionEditorial>
 
-      <footer className="flex flex-col gap-2 border-t border-borde pt-10 text-sm text-tenue">
-        <p>{CREDITO}</p>
-        <p>
-          Autora: <span className="text-tinta">{AUTORA}</span>
-        </p>
-        {REPOSITORIO && (
-          <p>
-            <a href={REPOSITORIO} className="text-tinta underline decoration-acento underline-offset-4">
-              Repositorio del proyecto
-            </a>
-          </p>
-        )}
-      </footer>
+      {/* Pie solo con el enlace al repositorio, si está definido */}
+      {REPOSITORIO && (
+        <footer className="border-t border-borde pt-10 text-sm text-tenue">
+          <a href={REPOSITORIO} className="text-tinta underline decoration-acento underline-offset-4">
+            Repositorio del proyecto
+          </a>
+        </footer>
+      )}
     </article>
   )
 }

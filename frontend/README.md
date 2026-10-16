@@ -91,7 +91,7 @@ frontend/
 └── src/
     ├── main.tsx             # React Query, router, fuentes y tema
     ├── App.tsx              # rutas (cada página se carga bajo demanda)
-    ├── proyecto.ts          # autora, crédito y URL del repositorio (editables)
+    ├── proyecto.ts          # URL del repositorio para "Acerca de" (editable)
     ├── api/                 # cliente fetch, tipos y hooks de React Query
     ├── components/
     │   ├── Layout.tsx       # barra superior, interruptor de tema

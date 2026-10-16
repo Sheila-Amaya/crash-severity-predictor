@@ -1,11 +1,10 @@
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { AUTORA } from '../proyecto'
 import { Acerca } from './Acerca'
 
 describe('Acerca', () => {
-  it('muestra las secciones, la Tabla I y la autora', () => {
+  it('muestra las secciones y la Tabla I', () => {
     render(<Acerca />)
     expect(screen.getByRole('heading', { level: 1, name: 'Un mapa de severidad vial, abierto y explicable.' })).toBeTruthy()
 
@@ -15,7 +14,8 @@ describe('Acerca', () => {
     }
     expect(screen.getByRole('list', { name: 'Flujo del sistema' }).textContent).toContain('Microdatos INE')
     expect(screen.getByText(/1 de cada 3 alertas «Fallecido» es real/)).toBeTruthy()
-    expect(screen.getByText(AUTORA)).toBeTruthy()
+    // Sin URL del repositorio no hay pie
+    expect(document.querySelector('footer')).toBeNull()
     expect(document.title).toBe('Acerca de · Severidad vial · Guatemala')
   })
 })
