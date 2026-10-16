@@ -146,9 +146,17 @@ export function Acerca() {
       {/* Pie solo con el enlace al repositorio, si está definido */}
       {REPOSITORIO && (
         <footer className="border-t border-borde pt-10 text-sm text-tenue">
-          <a href={REPOSITORIO} className="text-tinta underline decoration-acento underline-offset-4">
-            Repositorio del proyecto
-          </a>
+          <p>
+            Código abierto en{' '}
+            <a
+              href={REPOSITORIO}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-tinta underline decoration-acento underline-offset-4"
+            >
+              GitHub
+            </a>
+          </p>
         </footer>
       )}
     </article>

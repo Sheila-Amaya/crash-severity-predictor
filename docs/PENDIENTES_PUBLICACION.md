@@ -109,5 +109,3 @@ En el servidor del frontend (y los aplicables en la API):
   local apunta a `localhost:8000`).
 - **Auditorías de dependencias:** `npm audit` (hoy sin vulnerabilidades) y
   `pip-audit` para la API, que no se ha ejecutado.
-- **Repositorio:** si se publica la URL en el README, agregarla en
-  `frontend/src/proyecto.ts` (`REPOSITORIO`) para que aparezca en "Acerca de".

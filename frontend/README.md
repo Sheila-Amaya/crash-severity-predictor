@@ -91,7 +91,7 @@ frontend/
 └── src/
     ├── main.tsx             # React Query, router, fuentes y tema
     ├── App.tsx              # rutas (cada página se carga bajo demanda)
-    ├── proyecto.ts          # URL del repositorio para "Acerca de" (editable)
+    ├── proyecto.ts          # URL del repositorio: icono del encabezado y pie de "Acerca de"
     ├── api/                 # cliente fetch, tipos y hooks de React Query
     ├── components/
     │   ├── Layout.tsx       # barra superior, interruptor de tema
@@ -129,6 +129,9 @@ frontend/
 - **Mapa:** fondo liso sin teselas externas; burbujas en el centroide de cada
   área (resumen territorial, no ubicación exacta), vista de áreas y 3D. Los
   colores son quintiles de los datos visibles.
+- **Enlaces externos:** el único es el repositorio en GitHub (icono del
+  encabezado y pie de "Acerca de"), en una pestaña nueva con
+  `rel="noopener noreferrer"`. Sale de `REPOSITORIO` en `src/proyecto.ts`.
 - **Accesibilidad:** foco visible, navegación por teclado (el ranking permite
   recorrer el mapa sin ratón), regiones `aria-live`, `prefers-reduced-motion`.
 - **Carga:** cada página es un chunk aparte; MapLibre (≈1 MB) y Recharts solo

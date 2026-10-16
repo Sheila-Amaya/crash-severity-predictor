@@ -12,9 +12,9 @@ export function Logotipo({ className = 'flex' }: { className?: string }) {
   return (
     <span
       aria-hidden="true"
-      className={`h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-borde-fuerte text-acento ${className}`}
+      className={`h-8 w-8 shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-sm border border-borde-fuerte text-acento ${className}`}
     >
-      <svg viewBox={`0 0 ${LOGO.vista} ${LOGO.vista}`} className="h-6 w-6" focusable="false">
+      <svg viewBox={`0 0 ${LOGO.vista} ${LOGO.vista}`} className="h-5 w-5 sm:h-6 sm:w-6" focusable="false">
         {LOGO.anillos.map((a, i) => (
           <circle
             key={a.r}

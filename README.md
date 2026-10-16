@@ -73,6 +73,8 @@ npm run dev              # http://localhost:5173, con proxy de /api hacia la API
 Instalación completa, variables, scripts, compilación para producción y
 problemas frecuentes: [frontend/README.md](frontend/README.md).
 
+Código: https://github.com/Sheila-Amaya/crash-severity-predictor
+
 ### Pruebas
 
 ```bash
