@@ -43,6 +43,8 @@ const PARES = [
   ['serieLesionados', 'surface', GRAFICO, 'Serie lesionados / panel'],
   ['serieFallecidos', 'surface', GRAFICO, 'Serie fallecidos / panel'],
   ['serieLetalidad', 'surface', GRAFICO, 'Serie letalidad / panel'],
+  ['serieFallecidos', 'surface2', GRAFICO, 'Barra SHAP hacia fallecido / riel del simulador'],
+  ['serieLesionados', 'surface2', GRAFICO, 'Barra SHAP hacia lesionado / riel del simulador'],
   ['mapLabel', 'bg', TEXTO, 'Etiqueta de departamento / fondo del mapa'],
   ['mapBubbleStroke', 'bg', GRAFICO, 'Borde de burbuja / fondo del mapa'],
   ['mapContextLabel', 'bg', TEXTO, 'Etiqueta de contexto (país, mar, coordenadas) / mar'],
