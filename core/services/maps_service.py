@@ -7,6 +7,13 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger(__name__)
 
 
+# Víctimas: se agregan con las columnas propias de cada víctima
+# (fallecido_lesionado.depto_ocu / mupio_ocu), nunca uniendo con hecho,
+# porque num_corre no es llave compartida entre los archivos del INE.
+# Hechos: se cuentan por separado con las columnas de hecho
+# (el departamento es mupio_ocu / 100, código DDMM).
+
+
 class MapsService:
 
     @staticmethod
@@ -19,20 +26,27 @@ class MapsService:
         logger.info("Loading departments GeoJSON.")
 
         query = text("""
+            WITH victimas AS (
+                SELECT
+                    depto_ocu AS codigo,
+                    COUNT(*) FILTER (WHERE fall_les = 1) AS fallecidos,
+                    COUNT(*) FILTER (WHERE fall_les = 2) AS lesionados
+                FROM fallecido_lesionado
+                GROUP BY depto_ocu
+            ),
+            hechos AS (
+                SELECT
+                    mupio_ocu / 100 AS codigo,
+                    COUNT(*) AS accidentes
+                FROM hecho
+                GROUP BY mupio_ocu / 100
+            )
             SELECT
                 dg.cod_dep,
                 d.nombre,
-
-                COUNT(DISTINCT (h.num_corre, h.anio_ocu)) AS accidentes,
-
-                COUNT(*) FILTER (
-                    WHERE fl.fall_les = 1
-                ) AS fallecidos,
-
-                COUNT(*) FILTER (
-                    WHERE fl.fall_les = 2
-                ) AS lesionados,
-
+                COALESCE(h.accidentes, 0) AS accidentes,
+                COALESCE(v.fallecidos, 0) AS fallecidos,
+                COALESCE(v.lesionados, 0) AS lesionados,
                 ST_AsGeoJSON(dg.geom) AS geometry
 
             FROM departamento_geom dg
@@ -40,20 +54,11 @@ class MapsService:
             INNER JOIN cat_departamento d
                 ON dg.cod_dep = d.depto_ocu
 
-            LEFT JOIN cat_municipio m
-                ON m.depto_ocu = dg.cod_dep
+            LEFT JOIN victimas v
+                ON v.codigo = dg.cod_dep
 
-            LEFT JOIN hecho h
-                ON h.mupio_ocu = m.mupio_ocu
-
-            LEFT JOIN fallecido_lesionado fl
-                ON fl.num_corre = h.num_corre
-               AND fl.anio_ocu = h.anio_ocu
-
-            GROUP BY
-                dg.cod_dep,
-                d.nombre,
-                dg.geom
+            LEFT JOIN hechos h
+                ON h.codigo = dg.cod_dep
 
             ORDER BY
                 dg.cod_dep;
@@ -84,27 +89,34 @@ class MapsService:
             "type": "FeatureCollection",
             "features": features,
         }
-        
+
 
     @staticmethod
     def get_municipalities(db: Session):
 
         query = text("""
+        WITH victimas AS (
+            SELECT
+                mupio_ocu AS codigo,
+                COUNT(*) FILTER (WHERE fall_les = 1) AS fallecidos,
+                COUNT(*) FILTER (WHERE fall_les = 2) AS lesionados
+            FROM fallecido_lesionado
+            GROUP BY mupio_ocu
+        ),
+        hechos AS (
+            SELECT
+                mupio_ocu AS codigo,
+                COUNT(*) AS accidentes
+            FROM hecho
+            GROUP BY mupio_ocu
+        )
         SELECT
             mg.cod_mun AS id,
             mg.cod_dep,
             cm.nombre AS municipio,
-
-            COUNT(DISTINCT (h.num_corre, h.anio_ocu)) AS accidentes,
-
-            COUNT(*) FILTER (
-                WHERE fl.fall_les = 1
-            ) AS fallecidos,
-
-            COUNT(*) FILTER (
-                WHERE fl.fall_les = 2
-            ) AS lesionados,
-
+            COALESCE(h.accidentes, 0) AS accidentes,
+            COALESCE(v.fallecidos, 0) AS fallecidos,
+            COALESCE(v.lesionados, 0) AS lesionados,
             ST_AsGeoJSON(mg.geom) AS geometry
 
         FROM municipio_geom mg
@@ -113,18 +125,11 @@ class MapsService:
             ON mg.cod_mun = cm.mupio_ocu
            AND mg.cod_dep = cm.depto_ocu
 
-        LEFT JOIN hecho h
-            ON h.mupio_ocu = cm.mupio_ocu
+        LEFT JOIN victimas v
+            ON v.codigo = mg.cod_mun
 
-        LEFT JOIN fallecido_lesionado fl
-            ON fl.num_corre = h.num_corre
-           AND fl.anio_ocu = h.anio_ocu
-
-        GROUP BY
-            mg.cod_mun,
-            mg.cod_dep,
-            cm.nombre,
-            mg.geom
+        LEFT JOIN hechos h
+            ON h.codigo = mg.cod_mun
 
         ORDER BY
             accidentes DESC
