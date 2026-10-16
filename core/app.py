@@ -14,6 +14,7 @@ from core.routes.catalogs import options_router as catalog_options_router
 from core.routes.maps import choropleth_router
 from core.routes.stats import router as stats_router
 from core.services.predict_service import load_model
+from core.services.training_codes import load_training_codes
 
 
 # -- Logging ---------------------------------------------------------
@@ -33,6 +34,7 @@ async def lifespan(app: FastAPI):
     # /api/predecir responde 503.
     try:
         load_model()
+        load_training_codes()
     except RuntimeError as exc:
         logging.getLogger(__name__).error("Prediction disabled: %s", exc)
 

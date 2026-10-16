@@ -204,7 +204,8 @@ curl "http://localhost:8000/api/mapa/coropletico?nivel=municipio&depto=1&anio=20
 
 Entrada: `tipo_eve`, `tipo_veh`, `g_hora_5`, `dia_sem_ocu`, `sexo_per`,
 `edad_quinquenales`, `mayor_menor`, `depto_ocu`. Solo se aceptan los códigos
-que el modelo vio en entrenamiento (`data/clean/train.parquet`); los códigos
+que el modelo vio en entrenamiento (`data/clean/train.parquet`; ver
+`/api/predecir/opciones`); los códigos
 "Ignorado" (99, 9 y `g_hora_5=4`) se imputaron antes de entrenar y se
 rechazan con 422.
 
@@ -217,6 +218,24 @@ probabilidad, con `efecto` `aumenta` o `disminuye`.
 curl -X POST http://localhost:8000/api/predecir \
   -H "Content-Type: application/json" \
   -d '{"tipo_eve": 2, "tipo_veh": 18, "g_hora_5": 3, "dia_sem_ocu": 6, "sexo_per": 1, "edad_quinquenales": 7, "mayor_menor": 1, "depto_ocu": 1}'
+```
+
+### `GET /api/predecir/opciones` — opciones del simulador
+
+Para cada una de las 8 variables del modelo (`tipo_eve`, `tipo_veh`,
+`g_hora_5`, `dia_sem_ocu`, `sexo_per`, `edad_quinquenales`, `mayor_menor`,
+`depto_ocu`), la lista `{id, descripcion}` de los códigos que el modelo vio en
+entrenamiento, más un campo `nota`. Los códigos salen de
+`data/clean/train.parquet`, la misma fuente con la que `/api/predecir` valida
+la entrada, así que toda opción ofrecida es aceptada por el modelo. No incluye
+99, 9, `g_hora_5=4` ni `tipo_veh=15`; `edad_quinquenales=18` ("Ignorado") sí se
+incluye porque se conservó como categoría en el entrenamiento. Las
+descripciones salen de los catálogos de la base.
+
+Los filtros del dashboard usan `/api/catalogos`; el simulador usa este endpoint.
+
+```bash
+curl http://localhost:8000/api/predecir/opciones
 ```
 
 ### `GET /api/catalogs/*` — catálogos individuales

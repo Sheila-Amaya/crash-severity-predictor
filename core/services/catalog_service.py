@@ -522,3 +522,55 @@ def get_filter_options(db):
     ]
 
     return options
+
+# -- Opciones del simulador (/api/predecir/opciones) -------------------
+
+# variable del modelo -> (tabla, columna código, columna descripción)
+MODEL_CATALOGS = {
+    "tipo_eve": ("cat_tipo_evento", "tipo_eve", "descripcion"),
+    "tipo_veh": ("cat_tipo_vehiculo", "tipo_veh", "descripcion"),
+    "g_hora_5": ("cat_grupo_hora_5", "g_hora_5", "descripcion"),
+    "dia_sem_ocu": ("cat_dia_semana", "dia_sem_ocu", "nombre"),
+    "sexo_per": ("cat_sexo", "sexo_per", "descripcion"),
+    "edad_quinquenales": ("cat_edad_quinquenal", "edad_quinquenales", "descripcion"),
+    "mayor_menor": ("cat_mayor_menor", "mayor_menor", "descripcion"),
+    "depto_ocu": ("cat_departamento", "depto_ocu", "nombre"),
+}
+
+NOTA_OPCIONES_MODELO = (
+    "Algunos códigos del catálogo general no se ofrecen en el simulador porque "
+    "el modelo no los vio en entrenamiento: los valores 'Ignorado' (99, 9 y la "
+    "jornada Ignorada) se imputaron con la moda antes de entrenar, y algunos "
+    "tipos de vehículo no aparecen en los datos de entrenamiento."
+)
+
+
+def get_prediction_options(db, training_codes: dict) -> dict:
+    """
+    Opciones (id + descripción) de las 8 variables del modelo, limitadas a
+    los códigos de entrenamiento (los mismos que valida /api/predecir).
+    """
+    logger.info("Loading prediction options")
+
+    options = {}
+
+    for variable, (table, code_column, description_column) in MODEL_CATALOGS.items():
+        query = text(f"""
+            SELECT
+                {code_column} AS id,
+                {description_column} AS descripcion
+            FROM {table}
+            WHERE {code_column} = ANY(:codigos)
+            ORDER BY {code_column};
+        """)
+
+        result = db.execute(query, {"codigos": sorted(training_codes[variable])})
+
+        options[variable] = [
+            {"id": row.id, "descripcion": row.descripcion}
+            for row in result
+        ]
+
+    options["nota"] = NOTA_OPCIONES_MODELO
+
+    return options

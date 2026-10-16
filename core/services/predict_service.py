@@ -5,7 +5,8 @@ import joblib
 import pandas as pd
 import shap
 
-from core.schemas.prediction import ETIQUETAS_VARIABLES, FEATURES
+from core.schemas.prediction import ETIQUETAS_VARIABLES
+from core.services.training_codes import FEATURES, load_training_codes
 
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,9 @@ def predict_accident(data):
     logger.info("Running accident severity prediction.")
 
     model, explainer = load_model()
+
+    # Sin códigos de entrenamiento no hubo validación de entrada: 503
+    load_training_codes()
 
     features = pd.DataFrame(
         [[getattr(data, feature) for feature in FEATURES]],

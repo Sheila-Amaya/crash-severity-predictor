@@ -2,27 +2,16 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from core.services.training_codes import FEATURES, get_training_codes
+
 
 # -- Códigos vistos por el modelo en entrenamiento -------------------
-# Fuente: data/clean/train.parquet (tests/test_predict.py lo verifica).
+# Fuente única: data/clean/train.parquet (core/services/training_codes.py).
 # Los códigos "Ignorado" (99, 9, g_hora_5=4) se imputaron con la moda antes
 # de entrenar, por lo que el modelo nunca los vio. edad_quinquenales=18
 # ("Ignorado") sí se conservó como categoría.
 
-CODIGOS_ENTRENAMIENTO = {
-    "tipo_eve": frozenset(range(1, 9)),
-    "tipo_veh": frozenset({
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 22, 23, 24,
-    }),
-    "g_hora_5": frozenset({1, 2, 3}),
-    "dia_sem_ocu": frozenset(range(1, 8)),
-    "sexo_per": frozenset({1, 2}),
-    "edad_quinquenales": frozenset(range(1, 19)),
-    "mayor_menor": frozenset({1, 2}),
-    "depto_ocu": frozenset(range(1, 23)),
-}
-
-# Códigos "Ignorado" por variable (no estuvieron en entrenamiento)
+# Códigos "Ignorado" por variable (solo para dar un mensaje más claro)
 CODIGOS_IGNORADOS = {
     "tipo_eve": {99},
     "tipo_veh": {99},
@@ -30,9 +19,6 @@ CODIGOS_IGNORADOS = {
     "sexo_per": {9},
     "mayor_menor": {9},
 }
-
-# Orden de columnas con el que se entrenó el modelo
-FEATURES = tuple(CODIGOS_ENTRENAMIENTO)
 
 ETIQUETAS_VARIABLES = {
     "tipo_eve": "Tipo de evento",
@@ -76,12 +62,18 @@ class AccidenteInput(BaseModel):
     @field_validator(*FEATURES)
     @classmethod
     def validar_codigo_entrenamiento(cls, value, info):
-        campo = info.field_name
+        codigos = get_training_codes()
 
-        if value in CODIGOS_ENTRENAMIENTO[campo]:
+        # Sin datos de entrenamiento la predicción responde 503 en el servicio
+        if codigos is None:
             return value
 
-        validos = ", ".join(str(code) for code in sorted(CODIGOS_ENTRENAMIENTO[campo]))
+        campo = info.field_name
+
+        if value in codigos[campo]:
+            return value
+
+        validos = ", ".join(str(code) for code in sorted(codigos[campo]))
 
         if value in CODIGOS_IGNORADOS.get(campo, set()):
             raise ValueError(
@@ -97,6 +89,23 @@ class AccidenteInput(BaseModel):
 
 
 # -- Response Models ------------------------------------------------
+
+class OpcionModelo(BaseModel):
+    id: int
+    descripcion: str
+
+
+class PrediccionOpcionesResponse(BaseModel):
+    tipo_eve: list[OpcionModelo]
+    tipo_veh: list[OpcionModelo]
+    g_hora_5: list[OpcionModelo]
+    dia_sem_ocu: list[OpcionModelo]
+    sexo_per: list[OpcionModelo]
+    edad_quinquenales: list[OpcionModelo]
+    mayor_menor: list[OpcionModelo]
+    depto_ocu: list[OpcionModelo]
+    nota: str
+
 
 class Probabilidades(BaseModel):
     Fallecido: float
