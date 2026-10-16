@@ -3,7 +3,13 @@
 -- Período de datos: 2018–2024
 -- Fuente datos: INE — Microdatos de Hechos de Tránsito
 -- Fuente cartografía: IDEG — Infraestructura de Datos Espaciales de Guatemala
--- Tablas: 25 (2 principales + 2 puente + 19 catálogos + 2 geoespaciales)
+-- Tablas: 25 (2 principales + 1 puente + 1 de víctimas + 19 catálogos + 2 geoespaciales)
+--
+-- IMPORTANTE: num_corre NO es llave compartida entre los archivos del INE.
+-- Es el correlativo de fila de cada archivo (hechos, vehículos, víctimas),
+-- reiniciado cada año. Por eso fallecido_lesionado guarda los datos del
+-- evento de su propio archivo y NO tiene FK a hecho.
+-- Ver db/migrations/001_fallecido_lesionado_con_datos_propios.sql
 -- =============================================================================
 
 
@@ -371,30 +377,59 @@ COMMENT ON COLUMN vehiculo_involucrado.edad_per IS 'Edad exacta en años. 999=Ig
 
 -- -----------------------------------------------------------------------------
 
+-- =============================================================================
+-- SECCIÓN 7b: VÍCTIMAS (fallecidos y lesionados)
+-- Cada víctima guarda los datos del evento de su propio archivo INE.
+-- Sin FK a hecho: num_corre no es llave compartida entre archivos.
+-- Carga: scripts/cargar_fallecido_lesionado.py
+-- =============================================================================
+
 CREATE TABLE fallecido_lesionado (
-    id_fall_les       SERIAL  NOT NULL,
+    id_fall_les       INTEGER GENERATED ALWAYS AS IDENTITY,
     num_corre         INTEGER NOT NULL,
     anio_ocu          INTEGER NOT NULL,
+    mes_ocu           INTEGER NOT NULL,
+    dia_ocu           INTEGER NOT NULL,
+    hora_ocu          INTEGER NOT NULL,
+    g_hora_5          INTEGER NOT NULL,
+    dia_sem_ocu       INTEGER NOT NULL,
+    mupio_ocu         INTEGER NOT NULL,
+    depto_ocu         INTEGER NOT NULL,
+    tipo_eve          INTEGER NOT NULL,
     id_vehiculo       INTEGER NOT NULL,
+    tipo_veh          INTEGER NOT NULL,
     sexo_per          INTEGER NOT NULL,
     edad_per          INTEGER NOT NULL DEFAULT 999,
     edad_quinquenales INTEGER NOT NULL,
     mayor_menor       INTEGER NOT NULL,
     fall_les          INTEGER NOT NULL,
     int_o_noint       INTEGER NOT NULL,
-    CONSTRAINT pk_fallecido_lesionado    PRIMARY KEY (id_fall_les),
-    CONSTRAINT fk_fl_hecho               FOREIGN KEY (num_corre, anio_ocu) REFERENCES hecho(num_corre, anio_ocu),
-    CONSTRAINT fk_fl_vehiculo            FOREIGN KEY (id_vehiculo)         REFERENCES vehiculo(id_vehiculo),
-    CONSTRAINT fk_fl_sexo                FOREIGN KEY (sexo_per)            REFERENCES cat_sexo(sexo_per),
-    CONSTRAINT fk_fl_edad_quinquenal     FOREIGN KEY (edad_quinquenales)   REFERENCES cat_edad_quinquenal(edad_quinquenales),
-    CONSTRAINT fk_fl_mayor_menor         FOREIGN KEY (mayor_menor)         REFERENCES cat_mayor_menor(mayor_menor),
-    CONSTRAINT fk_fl_fall_les            FOREIGN KEY (fall_les)            REFERENCES cat_fall_les(fall_les),
-    CONSTRAINT fk_fl_internado           FOREIGN KEY (int_o_noint)         REFERENCES cat_internado(int_o_noint),
-    CONSTRAINT chk_fl_edad               CHECK (edad_per BETWEEN 0 AND 120 OR edad_per = 999)
+    CONSTRAINT pk_victima               PRIMARY KEY (id_fall_les),
+    CONSTRAINT uq_victima_fuente        UNIQUE (anio_ocu, num_corre),
+    CONSTRAINT fk_victima_g_hora_5      FOREIGN KEY (g_hora_5)          REFERENCES cat_grupo_hora_5(g_hora_5),
+    CONSTRAINT fk_victima_dia_semana    FOREIGN KEY (dia_sem_ocu)       REFERENCES cat_dia_semana(dia_sem_ocu),
+    CONSTRAINT fk_victima_municipio     FOREIGN KEY (mupio_ocu)         REFERENCES cat_municipio(mupio_ocu),
+    CONSTRAINT fk_victima_departamento  FOREIGN KEY (depto_ocu)         REFERENCES cat_departamento(depto_ocu),
+    CONSTRAINT fk_victima_tipo_evento   FOREIGN KEY (tipo_eve)          REFERENCES cat_tipo_evento(tipo_eve),
+    CONSTRAINT fk_victima_vehiculo      FOREIGN KEY (id_vehiculo)       REFERENCES vehiculo(id_vehiculo),
+    CONSTRAINT fk_victima_tipo_vehiculo FOREIGN KEY (tipo_veh)          REFERENCES cat_tipo_vehiculo(tipo_veh),
+    CONSTRAINT fk_victima_sexo          FOREIGN KEY (sexo_per)          REFERENCES cat_sexo(sexo_per),
+    CONSTRAINT fk_victima_edad_quinq    FOREIGN KEY (edad_quinquenales) REFERENCES cat_edad_quinquenal(edad_quinquenales),
+    CONSTRAINT fk_victima_mayor_menor   FOREIGN KEY (mayor_menor)       REFERENCES cat_mayor_menor(mayor_menor),
+    CONSTRAINT fk_victima_fall_les      FOREIGN KEY (fall_les)          REFERENCES cat_fall_les(fall_les),
+    CONSTRAINT fk_victima_internado     FOREIGN KEY (int_o_noint)       REFERENCES cat_internado(int_o_noint),
+    CONSTRAINT chk_victima_anio         CHECK (anio_ocu BETWEEN 2018 AND 2024),
+    CONSTRAINT chk_victima_mes          CHECK (mes_ocu  BETWEEN 1 AND 12),
+    CONSTRAINT chk_victima_dia          CHECK (dia_ocu  BETWEEN 1 AND 31),
+    CONSTRAINT chk_victima_hora         CHECK (hora_ocu BETWEEN 0 AND 23 OR hora_ocu = 99),
+    CONSTRAINT chk_victima_edad         CHECK (edad_per BETWEEN 0 AND 120 OR edad_per = 999)
 );
-COMMENT ON TABLE  fallecido_lesionado          IS 'Tabla puente N:M. Registra las víctimas asociadas a cada hecho de tránsito y contiene la variable objetivo utilizada por el modelo de aprendizaje automático.';
-COMMENT ON COLUMN fallecido_lesionado.fall_les IS 'Variable target: 1=Fallecido, 2=Lesionado';
-COMMENT ON COLUMN fallecido_lesionado.edad_per IS 'Edad exacta en años. 999=Ignorada';
+COMMENT ON TABLE  fallecido_lesionado           IS 'Víctimas (fallecidos y lesionados) 2018-2024 con los datos del evento de su propio archivo INE. Contiene la variable objetivo del modelo. Sin FK a hecho: num_corre no es llave compartida entre archivos.';
+COMMENT ON COLUMN fallecido_lesionado.num_corre IS 'Correlativo de fila del archivo de fallecidos y lesionados. NO relaciona con hecho.num_corre.';
+COMMENT ON COLUMN fallecido_lesionado.tipo_veh  IS 'Tipo de vehículo de la víctima. Redundante con vehiculo.tipo_veh para filtrar e indexar sin JOIN.';
+COMMENT ON COLUMN fallecido_lesionado.hora_ocu  IS 'Hora 0-23. 99=Ignorada';
+COMMENT ON COLUMN fallecido_lesionado.fall_les  IS 'Variable target: 1=Fallecido, 2=Lesionado';
+COMMENT ON COLUMN fallecido_lesionado.edad_per  IS 'Edad exacta en años. 999=Ignorada';
 
 -- =============================================================================
 -- SECCIÓN 8: TABLAS GEOESPACIALES (PostGIS)
@@ -441,9 +476,16 @@ CREATE INDEX idx_hecho_g_hora_5   ON hecho(g_hora_5);
 CREATE INDEX idx_hecho_dia_sem    ON hecho(dia_sem_ocu);
 CREATE INDEX idx_vi_hecho         ON vehiculo_involucrado(num_corre, anio_ocu);
 CREATE INDEX idx_vi_vehiculo      ON vehiculo_involucrado(id_vehiculo);
-CREATE INDEX idx_fl_hecho         ON fallecido_lesionado(num_corre, anio_ocu);
-CREATE INDEX idx_fl_fall_les      ON fallecido_lesionado(fall_les);
-CREATE INDEX idx_fl_vehiculo      ON fallecido_lesionado(id_vehiculo);
+CREATE INDEX idx_victima_anio     ON fallecido_lesionado(anio_ocu);
+CREATE INDEX idx_victima_depto    ON fallecido_lesionado(depto_ocu);
+CREATE INDEX idx_victima_mupio    ON fallecido_lesionado(mupio_ocu);
+CREATE INDEX idx_victima_g_hora_5 ON fallecido_lesionado(g_hora_5);
+CREATE INDEX idx_victima_dia_sem  ON fallecido_lesionado(dia_sem_ocu);
+CREATE INDEX idx_victima_tipo_eve ON fallecido_lesionado(tipo_eve);
+CREATE INDEX idx_victima_tipo_veh ON fallecido_lesionado(tipo_veh);
+CREATE INDEX idx_victima_sexo     ON fallecido_lesionado(sexo_per);
+CREATE INDEX idx_victima_edad_q   ON fallecido_lesionado(edad_quinquenales);
+CREATE INDEX idx_victima_fall_les ON fallecido_lesionado(fall_les);
 
 -- Índices espaciales GiST
 CREATE INDEX idx_departamento_geom ON departamento_geom USING GIST(geom);
@@ -458,9 +500,10 @@ CREATE INDEX idx_municipio_geom    ON municipio_geom    USING GIST(geom);
 -- Catálogos de persona  : 8
 -- Total catálogos       : 19
 -- Tablas principales    : 2
--- Tablas puente         : 2
+-- Tablas puente         : 1
+-- Tabla de víctimas     : 1
 -- Tablas geoespaciales  : 2
 -- TOTAL TABLAS          : 25
--- Índices B-Tree        : 10
+-- Índices B-Tree        : 17
 -- Índices GiST          : 2
 -- =============================================================================
