@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -13,6 +14,7 @@ from core.routes.catalogs import options_router as catalog_options_router
 from core.routes.maps import router as maps_router
 from core.routes.maps import choropleth_router
 from core.routes.stats import router as stats_router
+from core.services.predict_service import load_model
 
 
 # -- Logging ---------------------------------------------------------
@@ -27,11 +29,13 @@ async def lifespan(app: FastAPI):
     """
     Startup / Shutdown events.
     """
-    # inicializar recursos compartidos en el futuro.
-    # Ejemplo:
-    # - Modelo de Machine Learning
-    # - Pool de conexiones
-    # - Caché
+    # Modelo Random Forest + SHAP TreeExplainer (una sola carga).
+    # Si el .pkl no existe, el resto de la API sigue funcionando y
+    # /api/predecir responde 503.
+    try:
+        load_model()
+    except RuntimeError as exc:
+        logging.getLogger(__name__).error("Prediction disabled: %s", exc)
 
     yield
 

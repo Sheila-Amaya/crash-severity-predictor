@@ -3,22 +3,74 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
+import shap
+
+from core.schemas.prediction import ETIQUETAS_VARIABLES, FEATURES
 
 
 logger = logging.getLogger(__name__)
 
 
-# -- Load Machine Learning Model ------------------------------------
+# -- Machine Learning Model -----------------------------------------
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 MODEL_PATH = BASE_DIR / "data" / "models" / "random_forest.pkl"
 
-if not MODEL_PATH.exists():
-    raise RuntimeError(f"Model file not found: {MODEL_PATH}")
+TOP_FACTORES = 3
 
-model = joblib.load(MODEL_PATH)
+_model = None
+_explainer = None
 
-logger.info("Random Forest model loaded successfully.")
+
+def load_model():
+    """
+    Carga el Random Forest y su TreeExplainer una sola vez.
+    Se invoca en el lifespan de la aplicación.
+    """
+    global _model, _explainer
+
+    if _model is not None:
+        return _model, _explainer
+
+    if not MODEL_PATH.exists():
+        raise RuntimeError(f"Model file not found: {MODEL_PATH}")
+
+    _model = joblib.load(MODEL_PATH)
+    _explainer = shap.TreeExplainer(_model)
+
+    logger.info("Random Forest model and SHAP TreeExplainer loaded successfully.")
+
+    return _model, _explainer
+
+
+# -- SHAP local -----------------------------------------------------
+
+def top_factores(explainer, model, features: pd.DataFrame, prediction: int) -> list[dict]:
+    """
+    Las 3 variables con mayor contribución SHAP (en puntos porcentuales de
+    probabilidad) hacia la clase predicha, para este caso.
+    """
+    shap_values = explainer.shap_values(features)
+    class_index = list(model.classes_).index(prediction)
+
+    contribuciones = shap_values[0, :, class_index]
+
+    ranking = sorted(
+        zip(FEATURES, contribuciones),
+        key=lambda item: abs(item[1]),
+        reverse=True,
+    )[:TOP_FACTORES]
+
+    return [
+        {
+            "variable": variable,
+            "etiqueta": ETIQUETAS_VARIABLES[variable],
+            "valor": int(features.iloc[0][variable]),
+            "contribucion": round(float(contribucion) * 100, 2),
+            "efecto": "aumenta" if contribucion >= 0 else "disminuye",
+        }
+        for variable, contribucion in ranking
+    ]
 
 
 # -- Prediction Service ---------------------------------------------
@@ -26,27 +78,11 @@ logger.info("Random Forest model loaded successfully.")
 def predict_accident(data):
     logger.info("Running accident severity prediction.")
 
+    model, explainer = load_model()
+
     features = pd.DataFrame(
-        [[
-            data.tipo_eve,
-            data.tipo_veh,
-            data.g_hora_5,
-            data.dia_sem_ocu,
-            data.sexo_per,
-            data.edad_quinquenales,
-            data.mayor_menor,
-            data.depto_ocu
-        ]],
-        columns=[
-            "tipo_eve",
-            "tipo_veh",
-            "g_hora_5",
-            "dia_sem_ocu",
-            "sexo_per",
-            "edad_quinquenales",
-            "mayor_menor",
-            "depto_ocu"
-        ]
+        [[getattr(data, feature) for feature in FEATURES]],
+        columns=list(FEATURES),
     )
 
     prediction = int(model.predict(features)[0])
@@ -94,5 +130,6 @@ def predict_accident(data):
         "probabilidades": {
             "Fallecido": fatal_probability,
             "Lesionado": injured_probability
-        }
+        },
+        "factores": top_factores(explainer, model, features, prediction),
     }
