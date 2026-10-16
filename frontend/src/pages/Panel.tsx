@@ -13,6 +13,8 @@ import { HojaInferior } from '../components/ui/HojaInferior'
 import { contarFiltros, useFiltros } from '../state/filtros'
 import { useSincronizarUrl } from '../state/useSincronizarUrl'
 import { useEsEscritorio } from '../hooks/useMedia'
+import { useTema } from '../theme/tema'
+import { useTituloPagina } from '../hooks/useTituloPagina'
 
 /** Botón de drill-down de vuelta al país (también por teclado). */
 function VolverNacional() {
@@ -43,6 +45,10 @@ type Hoja = 'filtros' | 'datos' | null
  */
 export function Panel() {
   useSincronizarUrl()
+  useTituloPagina(
+    'Mapa',
+    'Mapa de víctimas de hechos de tránsito en Guatemala (INE 2018–2024) por departamento y municipio, con filtros, series y ranking.',
+  )
 
   const [plegado, setPlegado] = useState(false)
   const [hoja, setHoja] = useState<Hoja>(null)
@@ -51,13 +57,14 @@ export function Panel() {
   const escritorio = useEsEscritorio()
   // Estable: la hoja enfoca y restaura el foco solo al abrir/cerrar
   const cerrarHoja = useCallback(() => setHoja(null), [])
+  // Los colores van en el estilo de MapLibre: al cambiar de tema se rehace el mapa
+  const tema = useTema((estado) => estado.tema)
 
   return (
     <div className="absolute inset-0" data-mapa-raiz>
-      <MapaCoropletico />
-
-      {/* Capa de paneles: solo los paneles capturan el cursor (el mapa sigue usable) */}
-      <div className="pointer-events-none absolute inset-0">
+      {/* Capa de paneles: solo los paneles capturan el cursor (el mapa sigue usable).
+          Va antes del mapa en el DOM para que Tab recorra fichas y datos antes que el zoom. */}
+      <div className="pointer-events-none absolute inset-0 z-10">
         {/* Arriba al centro: KPIs y "volver" (en escritorio, entre las fichas y el panel de datos) */}
         <div className="absolute top-4 right-4 left-4 flex flex-col items-center gap-2 lg:right-[23rem] lg:left-[17rem]">
           <div data-obstaculo="arriba" className="pointer-events-auto w-full max-w-md lg:w-auto">
@@ -119,6 +126,8 @@ export function Panel() {
           </>
         )}
       </div>
+
+      <MapaCoropletico key={tema} />
 
       <HojaInferior titulo={`Filtros · ${activos}/9`} abierta={!escritorio && hoja === 'filtros'} onCerrar={cerrarHoja}>
         <BarraFiltros prefijo="hoja-filtro" conCabecera={false} />

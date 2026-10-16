@@ -62,6 +62,7 @@ export function Leyenda({ ancho = 'w-[22rem]' }: { ancho?: string }) {
         {/* Color: quintiles relativos (fila completa) */}
         <div className="w-full min-w-0">
           <p className="mb-1 text-[10.5px] text-tinta">Color: {metrica === 'letalidad' ? 'letalidad' : 'víctimas'}</p>
+          {clases.length === 0 && <p className="text-[10.5px] text-tenue">Sin datos para mostrar.</p>}
           <ol
             className="grid gap-0.5"
             style={{ gridTemplateColumns: `repeat(${Math.max(clases.length, 1)}, minmax(0, 1fr))` }}

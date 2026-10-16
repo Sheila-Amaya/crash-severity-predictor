@@ -102,7 +102,7 @@ export const ResultadoPrediccion = forwardRef<HTMLHeadingElement, Props>(functio
     <article
       aria-labelledby="resultado-titulo"
       className={`rounded-sm border bg-panel p-5 transition-opacity duration-200 ${desactualizado ? 'opacity-60' : ''}`}
-      style={{ borderColor: color, boxShadow: `0 0 0 1px ${color}33, 0 18px 40px rgb(0 0 0 / 0.45)` }}
+      style={{ borderColor: color, boxShadow: `0 0 0 1px ${color}33, var(--sombra-panel)` }}
     >
       <EtiquetaSeccion as="p">Resultado</EtiquetaSeccion>
       <h2 id="resultado-titulo" ref={ref} tabIndex={-1} className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">

@@ -26,6 +26,14 @@
 }
 
 @layer base {
+  /* Sombra de paneles flotantes: densa en oscuro, suave en claro */
+  :root {
+    --sombra-panel: 0 10px 30px rgb(0 0 0 / 0.45);
+  }
+  :root[data-theme="light"] {
+    --sombra-panel: 0 6px 20px rgb(21 23 26 / 0.12);
+  }
+
   html {
     background-color: var(--c-bg);
     color: var(--c-text);
@@ -78,17 +86,17 @@
     letter-spacing: -0.02em;
   }
 
-  /* Controles de MapLibre (zoom) en el estilo oscuro de los paneles */
+  /* Controles de MapLibre (zoom) en el estilo de los paneles */
   .maplibregl-ctrl-group {
     background: var(--c-surface) !important;
     border: 1px solid var(--c-border-strong);
     border-radius: 0.25rem !important;
-    box-shadow: 0 10px 30px rgb(0 0 0 / 0.45) !important;
+    box-shadow: var(--sombra-panel) !important;
   }
   .maplibregl-ctrl-group button + button {
     border-top: 1px solid var(--c-border) !important;
   }
-  .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  [data-theme="dark"] .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
     filter: invert(1);
   }
   .maplibregl-ctrl-group button:hover {
@@ -180,7 +188,7 @@
     background-color: color-mix(in srgb, var(--c-surface) 94%, transparent);
     border: 1px solid var(--c-border);
     border-radius: 0.25rem;
-    box-shadow: 0 10px 30px rgb(0 0 0 / 0.45);
+    box-shadow: var(--sombra-panel);
     backdrop-filter: blur(8px);
   }
 }

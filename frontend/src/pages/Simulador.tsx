@@ -7,9 +7,14 @@ import { FormularioSimulador } from '../components/simulador/FormularioSimulador
 import { ResultadoPrediccion } from '../components/simulador/ResultadoPrediccion'
 import { EtiquetaSeccion } from '../components/ui/Editorial'
 import { ErrorCarga, Skeleton } from '../components/ui/Estados'
+import { useTituloPagina } from '../hooks/useTituloPagina'
 import { formularioCompleto, mensajeDeError, type Formulario } from '../utils/simulador'
 
 export function Simulador() {
+  useTituloPagina(
+    'Simulador',
+    'Estime si una víctima de un hecho de tránsito resultaría fallecida o lesionada y vea qué variables pesaron más (Random Forest con SHAP).',
+  )
   const opciones = useOpcionesPrediccion()
   const predecir = usePredecir()
   const [valores, setValores] = useState<Formulario>({})

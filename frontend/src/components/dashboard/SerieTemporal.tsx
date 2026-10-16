@@ -115,6 +115,8 @@ export function SerieTemporal({ conTitulo = true }: { conTitulo?: boolean }) {
         <Skeleton className="h-48" etiqueta="Cargando serie…" />
       ) : isError ? (
         <ErrorCarga mensaje="No se pudo cargar la serie." onReintentar={refetch} />
+      ) : datos.every((d) => d.fallecidos + d.lesionados === 0) ? (
+        <p className="py-8 text-center text-sm text-tenue">Sin víctimas con estos filtros.</p>
       ) : verTabla ? (
         <TablaSerie datos={datos} />
       ) : (

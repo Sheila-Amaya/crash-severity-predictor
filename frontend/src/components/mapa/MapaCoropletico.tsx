@@ -21,6 +21,7 @@ import type { Nivel } from '../../api/types'
 import { usePrefiereMenosMovimiento } from '../../hooks/movimiento'
 import { useFiltros } from '../../state/filtros'
 import { useMapaUi, type Vista } from '../../state/mapaUi'
+import palette from '../../theme/palette.json'
 import { usePaleta, type Paleta } from '../../theme/tema'
 import type { PropiedadesMapa } from '../../utils/clasificacion'
 import { etiquetasVisibles, margenesLibres, type Lado } from '../../utils/espacio'
@@ -599,7 +600,7 @@ export function MapaCoropletico() {
       mapa.remove()
       mapaRef.current = null
     }
-    // La paleta es fija (solo tema oscuro); el mapa se crea una vez.
+    // El mapa se crea una vez; al cambiar de tema, Panel lo vuelve a montar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -658,6 +659,9 @@ export function MapaCoropletico() {
 
     const activo = vista === 'burbujas' && brillo
     const movil = esPantallaPequena()
+    // En tema claro el halo oscuro ensucia el fondo: más tenue, sin difuminar
+    // la burbuja y con borde nítido (las clases claras se apoyan en él)
+    const claro = paleta === palette.light
     const intenso: ExpressionSpecification = ['==', ['get', 'intenso'], true]
 
     mapa.setLayoutProperty('burbujas-halo', 'visibility', activo ? 'visible' : 'none')
@@ -667,19 +671,19 @@ export function MapaCoropletico() {
       ['get', 'radio'],
       ['case', intenso, movil ? 1.6 : 2.2, movil ? 1.3 : 1.8],
     ])
-    mapa.setPaintProperty('burbujas-halo', 'circle-opacity', ['case', intenso, 0.42, movil ? 0.12 : 0.25])
+    mapa.setPaintProperty('burbujas-halo', 'circle-opacity', claro ? ['case', intenso, 0.22, 0.1] : ['case', intenso, 0.42, movil ? 0.12 : 0.25])
 
-    mapa.setPaintProperty('burbujas', 'circle-blur', activo ? 0.3 : 0)
+    mapa.setPaintProperty('burbujas', 'circle-blur', activo && !claro ? 0.3 : 0)
     mapa.setPaintProperty('burbujas', 'circle-stroke-width', [
       'case',
       HOVER,
       2,
       ['==', ['get', 'clase'], 0],
       0,
-      activo ? 0.5 : 0.8,
+      activo && !claro ? 0.5 : 0.8,
     ])
-    mapa.setPaintProperty('burbujas', 'circle-stroke-opacity', ['case', HOVER, 1, activo ? 0.35 : 0.9])
-  }, [listo, vista, brillo])
+    mapa.setPaintProperty('burbujas', 'circle-stroke-opacity', ['case', HOVER, 1, activo && !claro ? 0.35 : 0.9])
+  }, [listo, vista, brillo, paleta])
 
   // -- Encuadre automático (filtros, "volver", enlaces compartidos) --------
   const claveEncuadre = claveEncuadreDe(nivel, filtros.depto, filtros.municipio, vista)
@@ -761,7 +765,7 @@ export function MapaCoropletico() {
         const el = document.createElement('span')
         el.className = 'cifra-burbuja'
         el.textContent = formatoEntero(p.total)
-        el.style.color = p.clase <= 2 ? paleta.mapCifraClara : paleta.mapCifraOscura
+        el.style.color = p.clase <= 2 ? paleta.mapCifraBaja : paleta.mapCifraAlta
         nuevo(f.geometry.coordinates as [number, number], el)
       }
     }

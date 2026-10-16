@@ -14,6 +14,23 @@ export default defineConfig(({ mode }) => {
     worker: {
       format: 'es',
     },
+    build: {
+      // MapLibre (~1,045 kB minificado, 285 kB gzip) es una sola biblioteca que
+      // no se puede dividir más; solo la carga la página del mapa. El límite
+      // cubre ese chunk y sigue avisando si cualquier otro crece de más.
+      chunkSizeWarningLimit: 1100,
+      rollupOptions: {
+        output: {
+          // Bibliotecas grandes en chunks propios (solo las pide la página del
+          // mapa) y cacheables aparte del código de la app
+          manualChunks(id) {
+            if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react'
+            if (id.includes('node_modules/maplibre-gl')) return 'maplibre'
+            if (/node_modules\/(recharts|d3-|victory-vendor|lodash)/.test(id)) return 'graficas'
+          },
+        },
+      },
+    },
     server: {
       port: 5173,
       // En desarrollo el navegador llama a /api en el mismo origen y Vite

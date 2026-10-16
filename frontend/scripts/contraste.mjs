@@ -79,25 +79,25 @@ for (const [tema, p] of Object.entries(palette)) {
   for (const [nombre, color] of p.mapScale.map((c, i) => [`clase ${i + 1}`, c])) {
     console.log(`info  ${contraste(p.mapBubbleStroke, color).toFixed(2).padStart(5)}:1 Borde de burbuja / ${nombre}  [${color}]`)
   }
-  console.log(`info  ${contraste(p.mapLine, p.bg).toFixed(2).padStart(5)}:1 Límite tenue (decorativo, blanco ~0.18) / fondo`)
+  console.log(`info  ${contraste(p.mapLine, p.bg).toFixed(2).padStart(5)}:1 Límite tenue (decorativo) / fondo`)
   // Contexto (decorativo, por debajo de IDEG): tierra, costa, fronteras y retícula
-  for (const [clave, nombre] of [['mapLand', 'Tierra vecina'], ['mapCoast', 'Costa'], ['mapBorder', 'Frontera internacional (punteada)'], ['mapGrid', 'Retícula (blanco ~0.05)']]) {
+  for (const [clave, nombre] of [['mapLand', 'Tierra vecina'], ['mapCoast', 'Costa'], ['mapBorder', 'Frontera internacional (punteada)'], ['mapGrid', 'Retícula']]) {
     console.log(`info  ${contraste(p[clave], p.bg).toFixed(2).padStart(5)}:1 ${nombre} (decorativo) / mar`)
   }
   const jerarquia = contraste(p.mapLine, p.bg) > contraste(p.mapBorder, p.bg) && contraste(p.mapBorder, p.bg) > contraste(p.mapGrid, p.bg)
   if (!jerarquia) fallos++
   console.log(`${jerarquia ? 'OK  ' : 'FALLA'} Jerarquía: límites IDEG > fronteras de contexto > retícula`)
 
-  // Cifra dentro de la burbuja: clara sobre las clases 1-2, oscura sobre 3-5
+  // Cifra dentro de la burbuja: mapCifraBaja sobre las clases 1-2, mapCifraAlta sobre 3-5
   p.mapScale.forEach((color, i) => {
-    const texto = i < 2 ? p.mapCifraClara : p.mapCifraOscura
+    const texto = i < 2 ? p.mapCifraBaja : p.mapCifraAlta
     const ratio = contraste(texto, color)
     const ok = ratio >= TEXTO
     if (!ok) fallos++
     console.log(`${ok ? 'OK  ' : 'FALLA'} ${ratio.toFixed(2).padStart(5)}:1 (mín 4.5) Cifra en burbuja / clase ${i + 1}  [${texto} sobre ${color}]`)
   })
 
-  // Resaltado al pasar el cursor: línea clara sobre un borde oscuro, para
+  // Resaltado al pasar el cursor: línea y borde de tonos opuestos, para
   // verse sobre cualquier clase (incluida la más clara)
   const minHover = Math.min(...[...p.mapScale, p.mapNull].map((c) => Math.max(contraste(p.mapHover, c), contraste(p.mapHoverCasing, c))))
   const okHover = minHover >= GRAFICO
