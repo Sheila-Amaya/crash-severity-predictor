@@ -24,8 +24,8 @@ from core.controllers.catalogs_controller import (
     list_major_minor,
     list_driver_statuses,
     list_hospitalizations,
-    list_fall_les
-    
+    list_fall_les,
+    list_filter_options
 )
 
 from core.schemas.department import DepartmentResponse
@@ -47,11 +47,30 @@ from core.schemas.major_minor import MajorMinorResponse
 from core.schemas.driver_status import DriverStatusResponse
 from core.schemas.hospitalization import HospitalizationResponse
 from core.schemas.fall_les import FallLesResponse
+from core.schemas.statistics import CatalogosResponse
 
 router = APIRouter(
     prefix="/catalogs",
     tags=["Catalogs"]
 )
+
+# Opciones de los menús de filtros (sin el prefijo /catalogs)
+options_router = APIRouter(
+    tags=["Catalogs"]
+)
+
+
+@options_router.get(
+    "/catalogos",
+    response_model=CatalogosResponse,
+    summary="Opciones de los menús de filtros",
+    description=(
+        "Devuelve, para cada filtro, las opciones (id + descripción) que existen "
+        "en los datos. Los códigos ignorados se muestran como 'Ignorado'."
+    ),
+)
+def get_filter_options(db: Session = Depends(get_db)):
+    return list_filter_options(db)
 
 
 @router.get(

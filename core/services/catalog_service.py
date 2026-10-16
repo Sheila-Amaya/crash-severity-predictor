@@ -1,6 +1,18 @@
 import logging
 from sqlalchemy import text
 
+from core.schemas.filters import (
+    ANIOS,
+    DEPTOS,
+    DIAS_SEMANA,
+    EDADES_QUINQUENALES,
+    G_HORA_5,
+    MUNICIPIOS,
+    SEXOS,
+    TIPOS_EVENTO,
+    TIPOS_VEHICULO,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -447,3 +459,66 @@ def get_fall_les(db):
         }
         for row in result
     ]
+
+
+# -- Opciones de los menús de filtros (/api/catalogos) -----------------
+
+# menú -> (tabla, columna código, columna descripción, códigos válidos)
+FILTER_CATALOGS = {
+    "depto": ("cat_departamento", "depto_ocu", "nombre", DEPTOS),
+    "g_hora_5": ("cat_grupo_hora_5", "g_hora_5", "descripcion", G_HORA_5),
+    "dia_sem_ocu": ("cat_dia_semana", "dia_sem_ocu", "nombre", DIAS_SEMANA),
+    "tipo_eve": ("cat_tipo_evento", "tipo_eve", "descripcion", TIPOS_EVENTO),
+    "tipo_veh": ("cat_tipo_vehiculo", "tipo_veh", "descripcion", TIPOS_VEHICULO),
+    "sexo": ("cat_sexo", "sexo_per", "descripcion", SEXOS),
+    "edad_quinquenales": ("cat_edad_quinquenal", "edad_quinquenales", "descripcion", EDADES_QUINQUENALES),
+}
+
+
+def get_filter_options(db):
+    """
+    Opciones (id + descripción) de cada menú de filtros, limitadas a los
+    códigos que existen en los datos. Los códigos 99/9/18/4 se muestran con
+    la descripción de su catálogo ("Ignorado" / "Ignorada").
+    """
+    logger.info("Loading filter options")
+
+    options = {
+        "anio": [{"id": anio, "descripcion": str(anio)} for anio in sorted(ANIOS)],
+    }
+
+    for menu, (table, code_column, description_column, valid_codes) in FILTER_CATALOGS.items():
+        query = text(f"""
+            SELECT
+                {code_column} AS id,
+                {description_column} AS descripcion
+            FROM {table}
+            WHERE {code_column} = ANY(:codigos)
+            ORDER BY {code_column};
+        """)
+
+        result = db.execute(query, {"codigos": sorted(valid_codes)})
+
+        options[menu] = [
+            {"id": row.id, "descripcion": row.descripcion}
+            for row in result
+        ]
+
+    query = text("""
+        SELECT
+            mupio_ocu AS id,
+            nombre AS descripcion,
+            depto_ocu AS depto
+        FROM cat_municipio
+        WHERE mupio_ocu = ANY(:codigos)
+        ORDER BY depto_ocu, nombre;
+    """)
+
+    result = db.execute(query, {"codigos": sorted(MUNICIPIOS)})
+
+    options["municipio"] = [
+        {"id": row.id, "descripcion": row.descripcion, "depto": row.depto}
+        for row in result
+    ]
+
+    return options

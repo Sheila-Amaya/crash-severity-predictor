@@ -18,7 +18,8 @@ from core.services.catalog_service import (
     get_major_minor,
     get_driver_statuses,
     get_hospitalizations,
-    get_fall_les
+    get_fall_les,
+    get_filter_options
 )
 
 def list_departments(db):
@@ -77,3 +78,6 @@ def list_hospitalizations(db):
 
 def list_fall_les(db):
     return get_fall_les(db)
+
+def list_filter_options(db):
+    return get_filter_options(db)

@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -59,7 +60,8 @@ def register_exception_handlers(app: FastAPI) -> None:
             content={
                 "success": False,
                 "message": "Validation error",
-                "errors": exc.errors()
+                # ctx.error puede traer la excepción (ValueError) de un validador
+                "errors": jsonable_encoder(exc.errors(), custom_encoder={Exception: str})
             }
         )
 
