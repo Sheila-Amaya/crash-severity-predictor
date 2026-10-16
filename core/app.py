@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from core.config import settings
 from core.middleware.exception_handler import register_exception_handlers
 from core.middleware.logging_config import setup_logging
 
@@ -63,9 +64,9 @@ register_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -79,6 +80,7 @@ app.include_router(
 
 app.include_router(
     catalogs_router,
+    prefix="/api",
 )
 
 app.include_router(
