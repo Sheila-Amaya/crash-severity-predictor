@@ -3,32 +3,32 @@ import { useCallback, useState } from 'react'
 import { BarraFiltros } from '../components/BarraFiltros'
 import { Insignia } from '../components/mapa/Insignia'
 import { ContenidoDatos, PanelDatos } from '../components/mapa/PanelDatos'
-import { EtiquetaSeccion } from '../components/ui/Editorial'
+import { useCatalogos } from '../api/queries'
+import { Leyenda } from '../components/mapa/Leyenda'
+import { MapaCoropletico } from '../components/mapa/MapaCoropletico'
+import { SelectorVista } from '../components/mapa/SelectorVista'
 import { HojaInferior } from '../components/ui/HojaInferior'
 import { contarFiltros, useFiltros } from '../state/filtros'
 import { useSincronizarUrl } from '../state/useSincronizarUrl'
 
-/** Fondo del mapa. El mapa MapLibre se monta aquí en la etapa (d). */
-function FondoMapa() {
-  return (
-    <div
-      aria-hidden="true"
-      className="absolute inset-0 bg-fondo"
-      style={{
-        backgroundImage: 'radial-gradient(var(--c-border) 1px, transparent 1px)',
-        backgroundSize: '22px 22px',
-      }}
-    />
-  )
-}
+/** Botón de drill-down de vuelta al país (también por teclado). */
+function VolverNacional() {
+  const depto = useFiltros((estado) => estado.filtros.depto)
+  const setFiltro = useFiltros((estado) => estado.setFiltro)
+  const { data: catalogos } = useCatalogos()
 
-/** Hueco de la leyenda (se completa con el mapa en la etapa d). */
-function LeyendaProvisional() {
+  if (depto === undefined) return null
+  const nombre = catalogos?.depto.find((d) => d.id === depto)?.descripcion
+
   return (
-    <div className="flotante pointer-events-auto w-56 px-3 py-2">
-      <EtiquetaSeccion as="p">Leyenda</EtiquetaSeccion>
-      <p className="mt-1 text-xs text-tenue">Se completa con el mapa (etapa d).</p>
-    </div>
+    <button
+      type="button"
+      onClick={() => setFiltro('depto', undefined)}
+      className="flotante pointer-events-auto flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-tinta hover:bg-panel-2"
+    >
+      <span aria-hidden="true">←</span> Volver a nivel nacional
+      {nombre && <span className="etiqueta hidden text-[10px] sm:inline">· {nombre}</span>}
+    </button>
   )
 }
 
@@ -45,7 +45,7 @@ export function Panel() {
 
   return (
     <div className="absolute inset-0">
-      <FondoMapa />
+      <MapaCoropletico />
 
       {/* Capa de paneles: no captura eventos salvo en los paneles (el mapa queda usable) */}
       <div className="pointer-events-none absolute inset-0 p-3">
@@ -56,19 +56,29 @@ export function Panel() {
           </div>
         </div>
 
-        {/* Escritorio: panel de datos a la derecha (deja sitio al zoom del mapa) */}
-        <div className="absolute top-3 right-14 bottom-24 hidden lg:flex lg:items-start">
-          <PanelDatos plegado={plegado} onAlternar={() => setPlegado((v) => !v)} />
+        {/* Escritorio: columna derecha con el panel de datos (deja sitio al zoom)
+            y la leyenda abajo; el panel cede altura para no taparla */}
+        <div className="absolute top-3 right-3 bottom-3 hidden flex-col items-end gap-3 lg:flex">
+          <div className="mr-11 flex min-h-0 flex-1 items-start">
+            <PanelDatos plegado={plegado} onAlternar={() => setPlegado((v) => !v)} />
+          </div>
+          <Leyenda />
         </div>
 
-        {/* Insignia abajo a la izquierda (sobre la barra de botones en móvil) */}
-        <div className="absolute bottom-16 left-3 lg:bottom-3">
+        {/* Abajo a la izquierda: insignia e interruptor de vista (sobre la barra en móvil) */}
+        <div className="absolute bottom-16 left-3 flex flex-wrap items-end gap-2 lg:bottom-3">
           <Insignia />
+          <SelectorVista />
         </div>
 
-        {/* Leyenda abajo a la derecha */}
-        <div className="absolute right-3 bottom-16 hidden sm:block lg:bottom-3">
-          <LeyendaProvisional />
+        {/* Drill-down: volver al país (arriba al centro; arriba a la izquierda en móvil) */}
+        <div className="absolute top-3 left-3 lg:left-1/2 lg:-translate-x-1/2">
+          <VolverNacional />
+        </div>
+
+        {/* Tableta: leyenda abajo a la derecha. Móvil: dentro de la hoja "Datos" */}
+        <div className="absolute right-3 bottom-16 hidden sm:block lg:hidden">
+          <Leyenda />
         </div>
 
         {/* Móvil: barra inferior que abre las hojas */}
@@ -91,6 +101,9 @@ export function Panel() {
         <BarraFiltros prefijo="hoja-filtro" conCabecera={false} />
       </HojaInferior>
       <HojaInferior titulo="Datos" abierta={hoja === 'datos'} onCerrar={cerrarHoja}>
+        <div className="p-3 sm:hidden [&>section]:w-full">
+          <Leyenda />
+        </div>
         <ContenidoDatos />
       </HojaInferior>
     </div>

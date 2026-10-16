@@ -17,8 +17,22 @@
     "serieLesionados": "#A9B0B9",
     "serieFallecidos": "#EC6A4C",
     "serieLetalidad": "#FBC765",
-    "mapOutline": "#A39888",
     "mapNull": "#4F4A44",
-    "mapScale": ["#5C2A2E", "#93382F", "#C9542E", "#EC8A3A", "#FBC765"]
+    "mapScale": [
+      "#5C2A2E",
+      "#93382F",
+      "#C9542E",
+      "#EC8A3A",
+      "#FBC765"
+    ],
+    "mapHover": "#ECEDEF",
+    "mapHoverCasing": "#0B0C0E",
+    "mapLine": "#28292B",
+    "mapLineStrong": "#4A4D52",
+    "mapLabel": "#8A9099",
+    "mapBubbleStroke": "#919398",
+    "mapNullDot": "#6E737A",
+    "mapCifraClara": "#ECEDEF",
+    "mapCifraOscura": "#000000"
   }
 }

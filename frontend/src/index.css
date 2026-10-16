@@ -78,6 +78,49 @@
     letter-spacing: -0.02em;
   }
 
+  /* Controles de MapLibre (zoom) en el estilo oscuro de los paneles */
+  .maplibregl-ctrl-group {
+    background: var(--c-surface) !important;
+    border: 1px solid var(--c-border-strong);
+    border-radius: 0.25rem !important;
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.45) !important;
+  }
+  .maplibregl-ctrl-group button + button {
+    border-top: 1px solid var(--c-border) !important;
+  }
+  .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+    filter: invert(1);
+  }
+  .maplibregl-ctrl-group button:hover {
+    background-color: var(--c-surface2) !important;
+  }
+
+  /* Etiquetas HTML sobre el mapa (no capturan el cursor) */
+  .etiqueta-mapa {
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-map-label);
+    white-space: nowrap;
+  }
+
+  /* En pantallas pequeñas los nombres se amontonan: se consultan al tocar */
+  @media (max-width: 639px) {
+    .etiqueta-mapa {
+      display: none;
+    }
+  }
+
+  .cifra-burbuja {
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Panel flotante sobre el mapa */
   .flotante {
     background-color: color-mix(in srgb, var(--c-surface) 94%, transparent);

@@ -43,7 +43,10 @@ const PARES = [
   ['serieLesionados', 'surface', GRAFICO, 'Serie lesionados / panel'],
   ['serieFallecidos', 'surface', GRAFICO, 'Serie fallecidos / panel'],
   ['serieLetalidad', 'surface', GRAFICO, 'Serie letalidad / panel'],
-  ['mapOutline', 'bg', GRAFICO, 'Borde de polígono / fondo neutro del mapa'],
+  ['mapLabel', 'bg', TEXTO, 'Etiqueta de departamento / fondo del mapa'],
+  ['mapBubbleStroke', 'bg', GRAFICO, 'Borde de burbuja / fondo del mapa'],
+  ['mapNullDot', 'bg', GRAFICO, 'Punto "sin víctimas" / fondo del mapa'],
+  ['mapLineStrong', 'bg', 1, 'Límite resaltado (decorativo) / fondo'],
 ]
 
 let fallos = 0
@@ -63,14 +66,31 @@ for (const [tema, p] of Object.entries(palette)) {
     const ratio = contraste(color, p.bg)
     console.log(
       `info  ${ratio.toFixed(2).padStart(5)}:1 Clase ${i + 1} / fondo  [${color}]` +
-        (ratio < GRAFICO ? ' → se apoya en el borde de polígono' : ''),
+        (ratio < GRAFICO ? ' → se apoya en el borde de burbuja' : ''),
     )
   })
 
-  // Borde frente a cada clase y al gris "sin víctimas"
-  for (const [nombre, color] of [...p.mapScale.map((c, i) => [`clase ${i + 1}`, c]), ['sin víctimas', p.mapNull]]) {
-    console.log(`info  ${contraste(p.mapOutline, color).toFixed(2).padStart(5)}:1 Borde de polígono / ${nombre}  [${color}]`)
+  // Borde de burbuja frente a cada clase
+  for (const [nombre, color] of p.mapScale.map((c, i) => [`clase ${i + 1}`, c])) {
+    console.log(`info  ${contraste(p.mapBubbleStroke, color).toFixed(2).padStart(5)}:1 Borde de burbuja / ${nombre}  [${color}]`)
   }
+  console.log(`info  ${contraste(p.mapLine, p.bg).toFixed(2).padStart(5)}:1 Límite tenue (decorativo, rgba blanco 0.12) / fondo`)
+
+  // Cifra dentro de la burbuja: clara sobre las clases 1-2, oscura sobre 3-5
+  p.mapScale.forEach((color, i) => {
+    const texto = i < 2 ? p.mapCifraClara : p.mapCifraOscura
+    const ratio = contraste(texto, color)
+    const ok = ratio >= TEXTO
+    if (!ok) fallos++
+    console.log(`${ok ? 'OK  ' : 'FALLA'} ${ratio.toFixed(2).padStart(5)}:1 (mín 4.5) Cifra en burbuja / clase ${i + 1}  [${texto} sobre ${color}]`)
+  })
+
+  // Resaltado al pasar el cursor: línea clara sobre un borde oscuro, para
+  // verse sobre cualquier clase (incluida la más clara)
+  const minHover = Math.min(...[...p.mapScale, p.mapNull].map((c) => Math.max(contraste(p.mapHover, c), contraste(p.mapHoverCasing, c))))
+  const okHover = minHover >= GRAFICO
+  if (!okHover) fallos++
+  console.log(`${okHover ? 'OK  ' : 'FALLA'} ${minHover.toFixed(2).padStart(5)}:1 (mín 3) Resaltado (doble línea) / peor clase del mapa`)
 
   // Escala monótona en luminancia (lectura en escala de grises)
   const lums = p.mapScale.map(luminancia)
@@ -85,7 +105,7 @@ for (const [tema, p] of Object.entries(palette)) {
 
   const parecida = Math.min(...p.mapScale.map((c) => contraste(c, p.mapNull)))
   console.log(
-    `info  Gris "sin víctimas" vs. clase más parecida: ${parecida.toFixed(2)}:1 → se distingue con rayado diagonal y entrada propia en la leyenda`,
+    `info  Gris "sin víctimas" (áreas) vs. clase más parecida: ${parecida.toFixed(2)}:1 → se distingue con rayado diagonal y entrada propia en la leyenda`,
   )
 }
 
