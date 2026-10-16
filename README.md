@@ -43,6 +43,8 @@ uvicorn core.app:app --reload
 
 Documentación interactiva: `http://localhost:8000/docs`.
 
+En Windows, `.\dev.ps1` abre dos ventanas de PowerShell: la API (con el `.venv` activado) y el frontend (`npm run dev`, en `http://localhost:5173`).
+
 ### Pruebas
 
 ```bash
