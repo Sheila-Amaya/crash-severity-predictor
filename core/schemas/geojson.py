@@ -1,5 +1,8 @@
-from typing import Any
-from pydantic import BaseModel, ConfigDict
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from core.schemas.filters import FiltrosQuery
 
 
 class Geometry(BaseModel):
@@ -30,4 +33,12 @@ class FeatureCollection(BaseModel):
 
     model_config = ConfigDict(
         extra="allow"
+    )
+
+# -- /api/mapa/coropletico --------------------------------------------
+
+class CoropleticoQuery(FiltrosQuery):
+    nivel: Literal["depto", "municipio"] = Field(
+        "depto",
+        description="Nivel territorial del mapa",
     )

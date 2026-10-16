@@ -11,6 +11,7 @@ from core.routes.predict import router as predict_router
 from core.routes.catalogs import router as catalogs_router
 from core.routes.catalogs import options_router as catalog_options_router
 from core.routes.maps import router as maps_router
+from core.routes.maps import choropleth_router
 from core.routes.stats import router as stats_router
 
 
@@ -92,6 +93,11 @@ app.include_router(
 
 app.include_router(
     maps_router,
+    prefix="/api",
+)
+
+app.include_router(
+    choropleth_router,
     prefix="/api",
 )
 
