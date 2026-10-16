@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react'
 import { useCatalogos } from '../api/queries'
 import type { Catalogos, FiltroKey } from '../api/types'
 import { FILTROS_EVENTO, FILTROS_VICTIMA } from '../api/types'
-import { ETIQUETAS_FILTRO } from '../lib/etiquetas'
+import { ETIQUETAS_FILTRO } from '../utils/etiquetas'
 import {
   contarFiltros,
   sanearFiltros,
