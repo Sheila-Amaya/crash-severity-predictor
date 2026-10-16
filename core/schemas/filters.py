@@ -99,3 +99,12 @@ class FiltrosQuery(BaseModel):
     @property
     def tiene_filtros_victima(self) -> bool:
         return any(getattr(self, campo) is not None for campo in FILTROS_VICTIMA)
+
+    def solo_filtros(self) -> "FiltrosQuery":
+        """
+        Devuelve únicamente los filtros, sin los parámetros propios de cada
+        endpoint (subclases como SerieQuery o RankingQuery).
+        """
+        return FiltrosQuery.model_validate(
+            self.model_dump(include=set(FiltrosQuery.model_fields))
+        )
