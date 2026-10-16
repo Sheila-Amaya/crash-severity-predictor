@@ -1,1 +1,75 @@
 @import "tailwindcss";
+
+/* Tema oscuro por atributo (lo fija src/theme/tema.ts) */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Colores: variables --c-* generadas desde src/theme/palette.json
+ * (única fuente, verificada con `npm run contraste`).
+ */
+@theme {
+  --color-fondo: var(--c-bg);
+  --color-tarjeta: var(--c-surface);
+  --color-tarjeta-2: var(--c-surface2);
+  --color-tinta: var(--c-text);
+  --color-tenue: var(--c-muted);
+  --color-borde: var(--c-border);
+  --color-borde-fuerte: var(--c-border-strong);
+  --color-senal: var(--c-accent);        /* ámbar de señal: decorativo en claro */
+  --color-ambar: var(--c-accent-text);   /* ámbar para texto y estados */
+  --color-boton: var(--c-button);
+  --color-boton-texto: var(--c-button-text);
+  --color-foco: var(--c-focus);
+  --color-peligro: var(--c-danger);
+
+  --font-display: "Archivo Variable", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-sans: "Source Sans 3 Variable", "Segoe UI", system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    background-color: var(--c-bg);
+    color: var(--c-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  /* Foco visible en todo control interactivo */
+  :focus-visible {
+    outline: 3px solid var(--c-focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Cifras y títulos condensados, estilo rótulo vial */
+  .rotulo {
+    font-family: var(--font-display);
+    font-stretch: 75%;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Línea de carril discontinua, sutil (decorativa) */
+  .carril {
+    height: 2px;
+    background-image: linear-gradient(to right, var(--c-accent) 60%, transparent 0);
+    background-size: 18px 2px;
+    opacity: 0.55;
+  }
+}

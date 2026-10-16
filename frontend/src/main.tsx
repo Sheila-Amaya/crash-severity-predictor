@@ -3,7 +3,11 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 
+// Fuentes autoalojadas (sin peticiones a terceros)
+import '@fontsource-variable/archivo/wdth.css'
+import '@fontsource-variable/source-sans-3/index.css'
 import './index.css'
+import './theme/tema'
 import App from './App.tsx'
 import { ApiError } from './api/client'
 

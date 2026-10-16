@@ -4,6 +4,7 @@ import { useCatalogos } from '../api/queries'
 import type { Catalogos, FiltroKey } from '../api/types'
 import { FILTROS_EVENTO, FILTROS_VICTIMA } from '../api/types'
 import { ETIQUETAS_FILTRO } from '../utils/etiquetas'
+import { ErrorCarga, Skeleton } from './ui/Estados'
 import {
   contarFiltros,
   sanearFiltros,
@@ -43,14 +44,16 @@ function Selector({ campo, catalogos }: { campo: FiltroKey; catalogos: Catalogos
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-xs font-medium">
+      <label htmlFor={id} className="text-xs font-semibold uppercase tracking-wide text-tenue">
         {ETIQUETAS_FILTRO[campo]}
       </label>
       <select
         id={id}
         value={valor ?? ''}
         onChange={(e) => setFiltro(campo, e.target.value === '' ? undefined : Number(e.target.value))}
-        className="rounded border px-2 py-1"
+        className={`w-full rounded-md border bg-tarjeta px-2 py-1.5 text-sm transition-colors duration-150 ${
+          valor === undefined ? 'border-borde-fuerte' : 'border-ambar font-semibold'
+        }`}
       >
         <option value="">Todos</option>
         {opciones
@@ -80,45 +83,55 @@ export function BarraFiltros() {
 
   useSanearFiltros(catalogos)
 
-  if (isPending) return <p aria-busy="true">Cargando filtros…</p>
+  if (isPending) {
+    return (
+      <div className="flex flex-col gap-3" aria-busy="true">
+        {Array.from({ length: 6 }, (_, i) => (
+          <Skeleton key={i} className="h-12" etiqueta="Cargando filtros…" />
+        ))}
+      </div>
+    )
+  }
 
   if (isError || !catalogos) {
     return (
-      <p role="alert">
-        No se pudieron cargar los filtros.{' '}
-        <button type="button" onClick={() => refetch()}>
-          Reintentar
-        </button>
-      </p>
+      <ErrorCarga mensaje="No se pudieron cargar los filtros." onReintentar={refetch} />
     )
   }
 
   const activos = contarFiltros(filtros)
 
   return (
-    <section aria-label="Filtros" className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-end gap-3">
+    <section aria-label="Filtros" className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {FILTROS_EVENTO.map((campo) => (
           <Selector key={campo} campo={campo} catalogos={catalogos} />
         ))}
       </div>
 
-      <fieldset className="flex flex-wrap items-end gap-3">
-        <legend className="text-xs">Filtros de víctima</legend>
+      <fieldset className="flex flex-col gap-3 border-t border-dashed border-borde-fuerte pt-3">
+        <legend className="rotulo pr-2 text-sm font-semibold uppercase tracking-wide">
+          Filtros de víctima
+        </legend>
         {FILTROS_VICTIMA.map((campo) => (
           <Selector key={campo} campo={campo} catalogos={catalogos} />
         ))}
       </fieldset>
 
       {tieneFiltrosVictima(filtros) && (
-        <p className="text-sm">
+        <p className="rounded-md border-l-4 border-ambar bg-tarjeta-2 p-2 text-xs">
           Con filtros de víctima no se puede contar hechos: los archivos del INE no vinculan
           víctimas con hechos.
         </p>
       )}
 
       <div>
-        <button type="button" onClick={limpiar} disabled={activos === 0}>
+        <button
+          type="button"
+          onClick={limpiar}
+          disabled={activos === 0}
+          className="w-full rounded-md border-2 border-ambar px-3 py-1.5 text-sm font-semibold text-ambar transition-colors duration-150 hover:bg-tarjeta-2 disabled:cursor-not-allowed disabled:border-borde disabled:text-tenue"
+        >
           Limpiar filtros{activos > 0 ? ` (${activos})` : ''}
         </button>
       </div>
