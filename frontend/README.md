@@ -84,7 +84,7 @@ npm run preview                                      # sirve dist/ en http://loc
 ```
 frontend/
 ├── index.html              # título, descripción, favicon y tema inicial (sin destello)
-├── public/favicon.svg
+├── vite.config.ts          # proxy de /api, chunks y favicon.svg generado
 ├── scripts/
 │   ├── contraste.mjs        # npm run contraste
 │   └── contexto_natural_earth.py  # genera src/data/contexto-*.json
@@ -102,7 +102,7 @@ frontend/
     ├── pages/               # Panel (mapa), Simulador, Acerca
     ├── state/               # filtros (Zustand) sincronizados con la URL
     ├── hooks/               # media queries, movimiento reducido, título de página
-    ├── theme/               # palette.json (oscuro y claro) y tema.ts
+    ├── theme/               # palette.json (oscuro y claro), tema.ts y logo.ts
     ├── utils/               # clasificación, geometría, espacio libre, formato, simulador
     └── data/                # contexto geográfico de Natural Earth
 ```
@@ -118,6 +118,12 @@ frontend/
   con el interruptor de la barra superior, la elección se recuerda en el
   navegador y, si no hay elección previa, se sigue `prefers-color-scheme`.
   Al cambiar de tema el mapa se vuelve a dibujar con los colores del tema.
+- **Logotipo:** un punto con dos anillos concéntricos que recuerdan las
+  burbujas del mapa (`components/ui/Logotipo.tsx`), en el color de acento del
+  tema activo; el anillo exterior late despacio salvo con
+  `prefers-reduced-motion`. Su geometría vive en `theme/logo.ts`, y de ahí y de
+  `palette.json` se genera `favicon.svg` al compilar (y en `npm run dev`), con
+  variante para `prefers-color-scheme: light`.
 - **Tipografías** autoalojadas (sin peticiones a terceros): **Inter** para el
   texto y **JetBrains Mono** para etiquetas técnicas y cifras tabulares.
 - **Mapa:** fondo liso sin teselas externas; burbujas en el centroide de cada

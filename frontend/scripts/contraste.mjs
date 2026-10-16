@@ -36,6 +36,8 @@ const PARES = [
   ['danger', 'surface', TEXTO, 'Texto de error / panel'],
   ['borderStrong', 'surface', GRAFICO, 'Borde de control / panel'],
   ['borderStrong', 'bg', GRAFICO, 'Borde de control / fondo del mapa'],
+  ['accent', 'topbar', GRAFICO, 'Logotipo (punto) / barra superior'],
+  ['accent', 'bg', GRAFICO, 'Logotipo del favicon / fondo'],
   ['focus', 'surface', GRAFICO, 'Anillo de foco / panel'],
   ['focus', 'bg', GRAFICO, 'Anillo de foco / fondo del mapa'],
   ['button', 'surface', GRAFICO, 'Botón / panel'],

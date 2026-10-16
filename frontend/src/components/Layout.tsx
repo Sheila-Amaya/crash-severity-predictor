@@ -3,22 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { useTema } from '../theme/tema'
 import { Skeleton } from './ui/Estados'
-
-/** Marca: señal preventiva (triángulo) en un recuadro de borde fino. */
-function Marca() {
-  return (
-    <span
-      aria-hidden="true"
-      className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-borde-fuerte sm:flex"
-    >
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M12 3 2.5 20h19L12 3Z" strokeLinejoin="round" />
-        <path d="M12 10v4.5" strokeLinecap="round" />
-        <circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none" />
-      </svg>
-    </span>
-  )
-}
+import { Logotipo } from './ui/Logotipo'
 
 /** Interruptor de tema: el oscuro es el principal; el claro, opcional. */
 function InterruptorTema() {
@@ -71,7 +56,7 @@ export function Layout() {
 
       <header className="z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-borde bg-barra px-3 sm:px-4">
         <NavLink to="/" className="flex shrink-0 items-center gap-3 sm:min-w-0 sm:shrink" aria-label="Severidad vial: volver al mapa">
-          <Marca />
+          <Logotipo />
           <span className="shrink-0 leading-tight sm:min-w-0 sm:shrink">
             {/* El nombre nunca se corta; el subtítulo sí (y en móvil se oculta) */}
             <span className="block text-sm font-semibold whitespace-nowrap text-tinta">Severidad vial</span>
@@ -81,7 +66,8 @@ export function Layout() {
 
         <nav aria-label="Principal" className="flex shrink-0 items-center gap-1 sm:gap-2">
           {!enMapa && (
-            <NavLink to="/" end className={enlace}>
+            // En móvil el logotipo con el nombre ya lleva al mapa (deja sitio al nombre)
+            <NavLink to="/" end className={(estado) => `${enlace(estado)} hidden sm:block`}>
               ← Mapa
             </NavLink>
           )}

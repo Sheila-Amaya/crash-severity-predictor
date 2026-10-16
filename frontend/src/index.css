@@ -79,6 +79,26 @@
     color: var(--c-muted);
   }
 
+  /* Logotipo: el anillo exterior late despacio (nada si se pide menos movimiento) */
+  @media (prefers-reduced-motion: no-preference) {
+    .logo-pulso {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: logo-pulso 3.6s ease-in-out infinite;
+    }
+  }
+  @keyframes logo-pulso {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.45;
+      transform: scale(0.94);
+    }
+  }
+
   /* Cifras: monoespaciadas tabulares */
   .cifra {
     font-family: var(--font-mono);
