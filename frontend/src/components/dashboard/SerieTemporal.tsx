@@ -85,7 +85,7 @@ function LeyendaSerie() {
   )
 }
 
-export function SerieTemporal() {
+export function SerieTemporal({ conTitulo = true }: { conTitulo?: boolean }) {
   const [agrupar, setAgrupar] = useState<Agrupacion>('anio')
   const [verTabla, setVerTabla] = useState(false)
   const filtros = useFiltros((estado) => estado.filtros)
@@ -107,7 +107,7 @@ export function SerieTemporal() {
           </button>
         }
       >
-        Evolución
+        {conTitulo ? 'Evolución' : 'Agrupar por'}
       </EtiquetaSeccion>
       <Segmentado etiqueta="Agrupar la serie por" opciones={AGRUPACIONES} valor={agrupar} onCambio={setAgrupar} />
 

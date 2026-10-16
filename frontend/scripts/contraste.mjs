@@ -74,7 +74,7 @@ for (const [tema, p] of Object.entries(palette)) {
   for (const [nombre, color] of p.mapScale.map((c, i) => [`clase ${i + 1}`, c])) {
     console.log(`info  ${contraste(p.mapBubbleStroke, color).toFixed(2).padStart(5)}:1 Borde de burbuja / ${nombre}  [${color}]`)
   }
-  console.log(`info  ${contraste(p.mapLine, p.bg).toFixed(2).padStart(5)}:1 Límite tenue (decorativo, rgba blanco 0.12) / fondo`)
+  console.log(`info  ${contraste(p.mapLine, p.bg).toFixed(2).padStart(5)}:1 Límite tenue (decorativo, blanco ~0.18) / fondo`)
 
   // Cifra dentro de la burbuja: clara sobre las clases 1-2, oscura sobre 3-5
   p.mapScale.forEach((color, i) => {

@@ -114,8 +114,11 @@ export function radioBurbuja(valor: number, maximo: number, minimo = 6, maximoPx
   return minimo + (maximoPx - minimo) * Math.sqrt(valor / maximo)
 }
 
-/** Radio máximo de burbuja (px) según nivel y ancho de pantalla. */
+/**
+ * Tope del radio de burbuja (px) según nivel y ancho de pantalla: con la raíz
+ * cuadrada, la mayor (Guatemala) llega al tope sin tapar a sus vecinas.
+ */
 export function radioMaximo(nivel: Nivel): number {
   const pequena = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 639px)').matches
-  return nivel === 'depto' ? (pequena ? 22 : 34) : pequena ? 18 : 26
+  return nivel === 'depto' ? (pequena ? 17 : 24) : pequena ? 14 : 20
 }

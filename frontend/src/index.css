@@ -95,6 +95,31 @@
     background-color: var(--c-surface2) !important;
   }
 
+  /* Foco del zoom igual al del resto de la app */
+  .maplibregl-ctrl button:focus-visible {
+    outline: 2px solid var(--c-focus) !important;
+    outline-offset: 1px;
+    box-shadow: none !important;
+  }
+
+  /* Zoom en la esquina inferior derecha, a 16 px de los bordes */
+  /* (!important: el CSS de MapLibre va sin capa y ganaría a @layer) */
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+    margin: 0 16px 16px 0 !important;
+  }
+
+  /* Pantallas pequeñas: abajo están la barra y las hojas; el zoom sube a la
+     esquina superior derecha, bajo la franja de KPIs */
+  @media (max-width: 1023px) {
+    .maplibregl-ctrl-bottom-right {
+      top: 5.5rem !important;
+      bottom: auto !important;
+    }
+    .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+      margin: 0 16px 0 0 !important;
+    }
+  }
+
   /* Etiquetas HTML sobre el mapa (no capturan el cursor) */
   .etiqueta-mapa {
     pointer-events: none;

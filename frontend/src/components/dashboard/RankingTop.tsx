@@ -25,6 +25,9 @@ const NIVELES: { valor: Nivel; etiqueta: string }[] = [
 const valorDe = (fila: FilaRanking, orden: OrdenRanking) =>
   orden === 'letalidad' ? (fila.letalidad ?? 0) : orden === 'victimas' ? fila.victimas : fila.fallecidos
 
+const recortar = (nombre: string, maximo = 17) =>
+  nombre.length > maximo ? `${nombre.slice(0, maximo - 1).trimEnd()}…` : nombre
+
 const formatoDe = (orden: OrdenRanking) => (orden === 'letalidad' ? formatoPorcentaje : formatoEntero)
 
 function TooltipRanking({ active, payload }: { active?: boolean; payload?: { payload: FilaRanking }[] }) {
@@ -45,7 +48,7 @@ function TooltipRanking({ active, payload }: { active?: boolean; payload?: { pay
   )
 }
 
-export function RankingTop() {
+export function RankingTop({ conTitulo = true }: { conTitulo?: boolean }) {
   const filtros = useFiltros((estado) => estado.filtros)
   const setFiltro = useFiltros((estado) => estado.setFiltro)
   const hayDepto = filtros.depto !== undefined
@@ -75,10 +78,12 @@ export function RankingTop() {
   const seleccionar = (fila: FilaRanking) => setFiltro(nivel === 'depto' ? 'depto' : 'municipio', fila.codigo)
 
   return (
-    <section aria-labelledby="ranking-titulo" className="flex flex-col gap-2.5">
-      <EtiquetaSeccion as="h3" id="ranking-titulo" derecha={nivel === 'depto' ? 'Depto.' : 'Municipio'}>
-        Top 10
-      </EtiquetaSeccion>
+    <section aria-labelledby={conTitulo ? 'ranking-titulo' : undefined} aria-label={conTitulo ? undefined : 'Top 10'} className="flex flex-col gap-2.5">
+      {conTitulo && (
+        <EtiquetaSeccion as="h3" id="ranking-titulo" derecha={nivel === 'depto' ? 'Depto.' : 'Municipio'}>
+          Top 10
+        </EtiquetaSeccion>
+      )}
       <div className="flex flex-col gap-2">
         <Segmentado etiqueta="Nivel del ranking" opciones={NIVELES} valor={nivel} onCambio={setNivel} />
         <Segmentado etiqueta="Ordenar ranking por" opciones={ORDENES} valor={orden} onCambio={setOrden} />
@@ -99,8 +104,14 @@ export function RankingTop() {
                 <YAxis
                   type="category"
                   dataKey="etiqueta"
-                  width={nivel === 'municipio' && !hayDepto ? 150 : 108}
-                  tick={{ fill: paleta.text, fontSize: 11 }}
+                  width={nivel === 'municipio' ? 118 : 108}
+                  // Nombres en una línea (recortados con "…"); el completo está en la tarjeta
+                  tick={({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => (
+                    <text x={x} y={y} dy={4} textAnchor="end" fill={paleta.text} fontSize={11}>
+                      <title>{payload.value}</title>
+                      {recortar(payload.value)}
+                    </text>
+                  )}
                   stroke={paleta.border}
                   tickLine={false}
                   interval={0}

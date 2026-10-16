@@ -1,32 +1,15 @@
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 
 import { useCatalogos } from '../api/queries'
 import type { Catalogos, FiltroKey } from '../api/types'
 import { FILTRO_KEYS, FILTROS_EVENTO, FILTROS_VICTIMA } from '../api/types'
-import {
-  contarFiltros,
-  sanearFiltros,
-  sonIguales,
-  tieneFiltrosVictima,
-  useFiltros,
-} from '../state/filtros'
+import { contarFiltros, tieneFiltrosVictima, useFiltros } from '../state/filtros'
+import { useSanearFiltros } from '../state/useSanearFiltros'
 import { ETIQUETAS_FILTRO } from '../utils/etiquetas'
 import { EtiquetaSeccion } from './ui/Editorial'
 import { ErrorCarga, Skeleton } from './ui/Estados'
 
-/** Quita de la URL/estado códigos que no existen (p. ej. enlaces editados a mano). */
-function useSanearFiltros(catalogos: Catalogos | undefined) {
-  const filtros = useFiltros((estado) => estado.filtros)
-  const reemplazar = useFiltros((estado) => estado.reemplazar)
-
-  useEffect(() => {
-    if (!catalogos) return
-    const saneados = sanearFiltros(filtros, catalogos)
-    if (!sonIguales(saneados, filtros)) reemplazar(saneados)
-  }, [catalogos, filtros, reemplazar])
-}
-
-function Selector({ campo, catalogos, prefijo }: { campo: FiltroKey; catalogos: Catalogos; prefijo: string }) {
+export function Selector({ campo, catalogos, prefijo }: { campo: FiltroKey; catalogos: Catalogos; prefijo: string }) {
   const valor = useFiltros((estado) => estado.filtros[campo])
   const depto = useFiltros((estado) => estado.filtros.depto)
   const setFiltro = useFiltros((estado) => estado.setFiltro)
