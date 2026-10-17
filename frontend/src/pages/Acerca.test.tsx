@@ -124,6 +124,37 @@ describe('Acerca', () => {
     }
   })
 
+  it('explica las figuras sin lenguaje causal: caso traducido, leyenda del árbol y puntaje', async () => {
+    const { container } = montar()
+
+    const caso = screen.getByRole('table', { name: /figura 03/ })
+    const filas = within(caso).getAllByRole('row').slice(1).map((f) => f.textContent)
+    expect(filas).toEqual([
+      expect.stringMatching(/Departamento.*Petén.*\(17\).*\+0\.11/),
+      expect.stringMatching(/Tipo de vehículo.*Bicicleta.*\(18\).*−0\.11/),
+      expect.stringMatching(/Tipo de evento.*Atropello.*\(5\).*\+0\.11/),
+      expect.stringMatching(/Sexo.*Hombre/),
+      expect.stringMatching(/Grupo de edad.*45 - 49/),
+      expect.stringMatching(/Día de la semana.*Sábado/),
+      expect.stringMatching(/Mayor o menor de edad.*Mayor/),
+      expect.stringMatching(/Jornada.*Noche/),
+    ])
+
+    expect(screen.getByText('Azul: predomina lesionado')).toBeTruthy()
+    expect(screen.getByText('Naranja: predomina fallecido')).toBeTruthy()
+    expect(screen.getByText(/muestra de entrenamiento con remuestreo, no al total de datos/)).toBeTruthy()
+    expect(screen.getByText(/muestra de 500 registros de prueba/)).toBeTruthy()
+    expect(screen.getByText('Son asociaciones aprendidas de los datos, no causas.')).toBeTruthy()
+
+    // El 19.1 % sale de /api/resumen
+    expect(await screen.findByText(/los fallecidos son el 19\.1 %/)).toBeTruthy()
+    expect(container.textContent).toMatch(/puntaje del modelo entre 0 y 1/)
+
+    // Nada de lenguaje causal (solo la negación "no causas")
+    const texto = (container.textContent ?? '').replace(/no causas/g, '')
+    expect(texto).not.toMatch(/\bcausa|provoca|por eso|mueren\b/i)
+  })
+
   it('el visor abre la figura, atrapa el foco y se cierra con Esc devolviendo el foco', () => {
     montar()
     const boton = screen.getByRole('button', { name: 'Ampliar figura 03: Una predicción, paso a paso' })

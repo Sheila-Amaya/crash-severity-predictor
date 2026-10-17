@@ -2,6 +2,7 @@ import { useCallback, useId, useState, type ReactNode } from 'react'
 
 import { useCatalogos, useResumen } from '../api/queries'
 import { ARBOLES, FIGURAS, FLUJO, METRICAS, PRUEBA, SECCIONES, VARIABLES, type Figura } from '../components/acerca/contenido'
+import { ComoLeer, DetalleFiguras, NotaSalida } from '../components/acerca/DetalleFiguras'
 import { Figuras } from '../components/acerca/Figuras'
 import { Icono, type NombreIcono } from '../components/acerca/Iconos'
 import { Indice } from '../components/acerca/Indice'
@@ -342,14 +343,13 @@ export function Acerca() {
               </Tarjeta>
             </div>
             <Metricas />
+            <NotaSalida />
           </Seccion>
 
           <Seccion id="explicabilidad" numero="03" etiqueta="Explicabilidad" titulo="Qué pesó en cada estimación.">
-            <p className="max-w-3xl leading-relaxed text-tenue">
-              SHAP indica cuánto empujó cada variable hacia fallecido o hacia lesionado; describe asociaciones en los
-              datos, no causas. Las etiquetas de las figuras están en inglés.
-            </p>
+            <ComoLeer />
             <Figuras figuras={FIGURAS} onAmpliar={setAmpliada} />
+            <DetalleFiguras />
           </Seccion>
 
           <Seccion id="uso-responsable" numero="04" etiqueta="Uso responsable" titulo="Para qué sirve y para qué no.">
