@@ -2,17 +2,19 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 const CONSULTA = '(prefers-reduced-motion: reduce)'
 
+// Sin matchMedia (navegadores muy antiguos, jsdom) se asume que no se pide
+// reducir el movimiento.
 function suscribir(callback: () => void) {
-  const media = window.matchMedia(CONSULTA)
-  media.addEventListener('change', callback)
-  return () => media.removeEventListener('change', callback)
+  const media = window.matchMedia?.(CONSULTA)
+  media?.addEventListener('change', callback)
+  return () => media?.removeEventListener('change', callback)
 }
 
 /** true si el sistema pide reducir el movimiento. */
 export function usePrefiereMenosMovimiento(): boolean {
   return useSyncExternalStore(
     suscribir,
-    () => window.matchMedia(CONSULTA).matches,
+    () => window.matchMedia?.(CONSULTA).matches ?? false,
     () => false,
   )
 }
