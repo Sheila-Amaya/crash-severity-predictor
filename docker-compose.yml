@@ -8,6 +8,20 @@
 
 name: severidad-vial
 
+# Registros de Docker con rotación: como máximo 3 archivos de 10 MB por
+# servicio, para que no llenen el disco del servidor.
+x-registros: &registros
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Memoria (pensada para un servidor de 2 GB; ver docs/DESPLIEGUE.md): la suma
+# de los límites (db 512 + api 768 + web 64, + caddy 128 en modo servidor =
+# 1.47 GiB) deja ~0.5 GiB al sistema aunque todos llegaran a su tope. Picos
+# medidos: api ~580 MiB (modelo + SHAP), db ~300 MiB (incluye caché), web
+# ~20 MiB, caddy ~30 MiB.
+
 services:
   db:
     image: postgis/postgis:17-3.5
@@ -35,6 +49,7 @@ services:
       start_period: 120s
     mem_limit: 512m
     shm_size: 128m
+    logging: *registros
 
   api:
     build:
@@ -56,7 +71,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    mem_limit: 1g
+    mem_limit: 768m
+    logging: *registros
 
   web:
     build:
@@ -72,7 +88,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    mem_limit: 128m
+    mem_limit: 64m
+    logging: *registros
 
 networks:
   # Sin salida a internet: base y API solo hablan entre sí y con nginx

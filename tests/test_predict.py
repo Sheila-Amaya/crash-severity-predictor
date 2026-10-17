@@ -90,6 +90,17 @@ def test_predecir_campo_faltante(client):
     assert response.status_code == 422
 
 
+def test_error_de_validacion_no_registra_el_cuerpo(client, caplog):
+    marca = "valor-que-no-debe-quedar-en-el-registro"
+
+    with caplog.at_level("WARNING"):
+        response = client.post("/api/predecir", json={**CASO, "tipo_eve": marca})
+
+    assert response.status_code == 422
+    assert "body.tipo_eve" in caplog.text
+    assert marca not in caplog.text
+
+
 def test_shap_suma_la_probabilidad():
     """Base + suma de contribuciones SHAP = probabilidad de la clase."""
     import pandas as pd

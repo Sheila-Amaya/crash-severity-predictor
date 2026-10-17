@@ -48,11 +48,13 @@ def register_exception_handlers(app: FastAPI) -> None:
         request: Request,
         exc: RequestValidationError
     ):
+        # En el registro solo el campo y el tipo de error: exc.errors() trae
+        # también los valores recibidos (el cuerpo de la petición)
         logger.warning(
             "Validation error on %s %s: %s",
             request.method,
             request.url.path,
-            exc.errors()
+            [(".".join(map(str, e.get("loc", ()))), e.get("type")) for e in exc.errors()]
         )
 
         return JSONResponse(
