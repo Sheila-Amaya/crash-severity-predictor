@@ -102,7 +102,7 @@ npm run dev              # http://localhost:5173, con proxy de /api hacia la API
 |---|---|
 | `/` Mapa | Víctimas por departamento o municipio (burbujas, áreas o 3D), filtros, KPIs, ranking y evolución. |
 | `/simulador` | Estima si una víctima resultaría fallecida o lesionada y explica los 3 factores que más pesaron (SHAP). |
-| `/acerca` | Origen de los datos, flujo del sistema, métricas del modelo (Tabla I) y uso responsable. |
+| `/acerca` | Origen de los datos, flujo del sistema, métricas del modelo, explicabilidad (SHAP) y uso responsable. |
 
 | Simulador | Tema claro | Móvil |
 |---|---|---|
@@ -398,9 +398,9 @@ Las opciones con su descripción se obtienen de `GET /api/catalogos`.
 
 El modelo es un **Random Forest de 200 árboles** que clasifica a cada víctima
 como fallecida o lesionada a partir de 8 variables del hecho y de la persona.
-Se evaluó en una partición de prueba de 14,389 víctimas (20 % de los datos).
+Se evaluó en 14,389 registros de prueba (20 % de los datos).
 
-**Tabla I — desempeño en el conjunto de prueba**
+**Métricas del modelo — evaluación en datos de prueba**
 
 | Métrica | Valor |
 |---|---|
@@ -410,8 +410,8 @@ Se evaluó en una partición de prueba de 14,389 víctimas (20 % de los datos).
 | Recall de fallecidos | 0.6245 |
 | Precisión de fallecidos | 0.3382 |
 
-Las figuras siguientes, del paper, usan SHAP para mostrar cuánto aporta cada
-variable a la predicción. Sus etiquetas están en inglés: *Accident Type* (tipo
+Las figuras siguientes usan SHAP para mostrar cuánto aporta cada variable a la
+predicción. Las etiquetas de las figuras están en inglés: *Accident Type* (tipo
 de evento), *Department* (departamento), *Gender* (sexo), *Age Group* (grupo de
 edad), *Vehicle Type* (tipo de vehículo), *Time Slot* (jornada), *Day of the
 Week* (día de la semana) y *Age Status* (mayor o menor de edad).
