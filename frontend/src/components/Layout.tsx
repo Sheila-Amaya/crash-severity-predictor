@@ -75,7 +75,8 @@ export function Layout() {
 
       <header className="z-20 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-borde bg-barra px-2.5 sm:gap-3 sm:px-4">
         <NavLink to="/" className="flex shrink-0 items-center gap-2 sm:min-w-0 sm:shrink sm:gap-3" aria-label="Severidad vial: volver al mapa">
-          <Logotipo />
+          {/* Por debajo de 380 px no cabe todo: el nombre (que no se corta) basta */}
+          <Logotipo className="flex max-[379px]:hidden" />
           <span className="shrink-0 leading-tight sm:min-w-0 sm:shrink">
             {/* El nombre nunca se corta; el subtítulo sí (y en móvil se oculta) */}
             <span className="block text-sm font-semibold whitespace-nowrap text-tinta">Severidad vial</span>
