@@ -98,7 +98,17 @@ export function Leyenda({ ancho = 'w-[22rem]' }: { ancho?: string }) {
             })}
           </div>
         )}
-        {vista === '3d' && <p className="text-[10.5px] text-tinta">Altura: víctimas (raíz cuadrada)</p>}
+        {vista === '3d' && (
+          // Texto siempre visible (no un tooltip): la leyenda flota en una esquina
+          // y así se lee igual con ratón, teclado, pantalla táctil y lector
+          <div>
+            <p className="text-[10.5px] text-tinta">Altura: víctimas (escala suavizada)</p>
+            <p className="mt-0.5 text-[10px] leading-snug text-tenue">
+              Una columna más alta tiene más víctimas, pero la altura no es proporcional: se suaviza para que los
+              municipios grandes no tapen a los demás. Para cifras exactas, usa el ranking.
+            </p>
+          </div>
+        )}
 
         {sinVictimas > 0 && (
           <p className="flex items-center gap-1.5 text-[10.5px] text-tinta">
