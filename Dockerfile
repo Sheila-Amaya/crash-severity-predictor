@@ -19,7 +19,17 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_CACHE_DIR=1
 RUN python -m venv /opt/venv
 ENV PATH=/opt/venv/bin:$PATH
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+# Mismas versiones de requirements.txt; luego se quita lo que no se ejecuta:
+# pruebas de los paquetes, pip, fuentes Cython/C y cabeceras de compilación.
+# Los .pyc se conservan (arranque rápido con un usuario sin escritura).
+RUN pip install -r requirements.txt \
+ && pip uninstall -y pip \
+ && sitio="$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')" \
+ && find "$sitio" -depth -type d -name tests -exec rm -rf {} + \
+ && find "$sitio" -type f \( -name '*.pyx' -o -name '*.pxd' -o -name '*.pxi' \
+      -o -name '*.c' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) -delete \
+ && find "$sitio" -depth -type d -empty -delete \
+ && du -sh /opt/venv
 
 # -- Imagen final ----------------------------------------------------
 FROM python:${PYTHON_VERSION}-slim AS api
