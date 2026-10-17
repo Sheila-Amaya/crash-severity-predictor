@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { REPOSITORIO } from '../proyecto'
@@ -41,19 +41,25 @@ describe('Acerca', () => {
   beforeEach(() => vi.unstubAllGlobals())
   afterEach(() => cleanup())
 
-  it('muestra el hero con las cifras leídas de la API', async () => {
+  it('muestra el hero con el título nuevo y las cifras leídas de la API', async () => {
     montar()
-    expect(screen.getByRole('heading', { level: 1, name: 'Un mapa de severidad vial, abierto y explicable.' })).toBeTruthy()
-    expect(await screen.findByText('71,942')).toBeTruthy()
-    expect(screen.getByText('52,488')).toBeTruthy()
-    // 7 años (2018–2024) y 22 departamentos, desde /api/catalogos
-    expect(await screen.findByText('7')).toBeTruthy()
-    expect(screen.getByText('2018–2024')).toBeTruthy()
-    expect(screen.getByText('22')).toBeTruthy()
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Dónde son más letales los accidentes viales en Guatemala' }),
+    ).toBeTruthy()
+    // El valor final siempre está disponible (texto para lectores de pantalla)
+    expect((await screen.findAllByText('71,942')).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('52,488').length).toBeGreaterThan(0)
+    expect((await screen.findAllByText('2018–2024')).length).toBe(1)
+    expect(screen.getAllByText('22').length).toBeGreaterThan(0)
     expect(document.title).toBe('Acerca de · Severidad vial · Guatemala')
   })
 
-  it('tiene las cinco secciones numeradas, la Tabla I accesible y el enlace al código', () => {
+  it('no menciona el paper, el congreso ni "Tabla I"', () => {
+    const { container } = montar()
+    expect(container.textContent).not.toMatch(/paper|congreso|CONESCAPAN|Tabla I\b|publicaci[oó]n/i)
+  })
+
+  it('tiene las cinco secciones, el índice, las métricas accesibles y el enlace al código', () => {
     montar()
     for (const titulo of [
       'Microdatos oficiales del INE.',
@@ -65,40 +71,62 @@ describe('Acerca', () => {
       expect(screen.getByRole('heading', { level: 2, name: titulo })).toBeTruthy()
     }
 
-    const tabla = screen.getByRole('table', { name: /Tabla I/ })
+    const indice = screen.getByRole('navigation', { name: 'Secciones de la página' })
+    expect(within(indice).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([
+      '#datos',
+      '#modelo',
+      '#explicabilidad',
+      '#uso-responsable',
+      '#codigo',
+    ])
+
+    const tabla = screen.getByRole('table', { name: /Métricas del modelo/ })
     for (const valor of ['0.6949', '0.7233', '0.7336', '0.6245', '0.3382']) {
       expect(within(tabla).getByText(valor)).toBeTruthy()
     }
-    expect(screen.getByRole('list', { name: 'Flujo del sistema' }).textContent).toContain('Microdatos INE')
+    expect(within(tabla).getByText('De cada 100 fallecidos reales, el modelo detecta ~62.')).toBeTruthy()
+
+    const flujo = screen.getByRole('list', { name: 'Flujo de datos' })
+    expect(within(flujo).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      expect.stringContaining('Datos INE'),
+      expect.stringContaining('Limpieza'),
+      expect.stringContaining('Modelo'),
+      expect.stringContaining('API'),
+      expect.stringContaining('Mapa y simulador'),
+    ])
     expect(screen.getByText(/1 de cada 3 alertas «Fallecido» es real/)).toBeTruthy()
 
     const enlace = screen.getByRole('link', { name: /Ver el repositorio en GitHub/ })
     expect(enlace.getAttribute('href')).toBe(REPOSITORIO)
     expect(enlace.getAttribute('rel')).toBe('noopener noreferrer')
-    // Sin pie de autoría ni créditos
     expect(document.querySelector('footer')).toBeNull()
   })
 
-  it('las figuras cargan en diferido, con alt y tamaño reservado', () => {
+  it('las cuatro figuras usan celdas idénticas: marco 4:3, contain, etiqueta FIG. y carga diferida', () => {
     montar()
-    const imagenes = screen.getAllByRole('img').filter((i) => i.getAttribute('src')?.startsWith('/figuras/'))
-    expect(imagenes.map((i) => i.getAttribute('src'))).toEqual([
-      '/figuras/shap-resumen.png',
-      '/figuras/shap-abejas.png',
-      '/figuras/shap-cascada.png',
-      '/figuras/arbol-decision.png',
+    const celdas = [...document.querySelectorAll<HTMLElement>('[data-figura]')]
+    expect(celdas.map((c) => within(c).getByText(/^FIG\. 0\d$/).textContent)).toEqual([
+      'FIG. 01',
+      'FIG. 02',
+      'FIG. 03',
+      'FIG. 04',
     ])
-    for (const img of imagenes) {
+    for (const celda of celdas) {
+      const marco = celda.querySelector('[data-marco]') as HTMLElement
+      expect(marco.className).toContain('aspect-[4/3]')
+      const img = within(marco).getByRole('img')
+      expect(img.className).toContain('object-contain')
       expect(img.getAttribute('loading')).toBe('lazy')
       expect(img.getAttribute('alt')?.length).toBeGreaterThan(20)
       expect(Number(img.getAttribute('width'))).toBeGreaterThan(0)
-      expect(Number(img.getAttribute('height'))).toBeGreaterThan(0)
+      // Botón "Ampliar" siempre presente (no depende del hover)
+      expect(within(celda).getByRole('button', { name: /^Ampliar figura 0\d:/ })).toBeTruthy()
     }
   })
 
-  it('el lightbox abre la figura, atrapa el foco y se cierra con Esc devolviendo el foco', () => {
+  it('el visor abre la figura, atrapa el foco y se cierra con Esc devolviendo el foco', () => {
     montar()
-    const boton = screen.getByRole('button', { name: 'Ampliar figura: Una predicción, paso a paso' })
+    const boton = screen.getByRole('button', { name: 'Ampliar figura 03: Una predicción, paso a paso' })
     boton.focus()
     fireEvent.click(boton)
 
@@ -107,7 +135,6 @@ describe('Acerca', () => {
     expect(document.activeElement).toBe(cerrar)
     expect(within(dialogo).getByRole('img').getAttribute('src')).toBe('/figuras/shap-cascada.png')
 
-    // Tab no sale del diálogo (único elemento enfocable: Cerrar)
     fireEvent.keyDown(document, { key: 'Tab' })
     expect(document.activeElement).toBe(cerrar)
 
@@ -116,12 +143,41 @@ describe('Acerca', () => {
     expect(document.activeElement).toBe(boton)
   })
 
-  it('el lightbox también se cierra al hacer clic fuera', () => {
+  it('el visor también se cierra al hacer clic fuera', () => {
     montar()
-    fireEvent.click(screen.getByRole('button', { name: 'Ampliar figura: Qué variables pesan más' }))
-    const fondo = document.querySelector('.bg-black\\/75') as HTMLElement
-    fireEvent.click(fondo)
+    fireEvent.click(screen.getByRole('button', { name: 'Ampliar figura 01: Qué variables pesan más' }))
+    fireEvent.click(document.querySelector('.bg-black\\/75') as HTMLElement)
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('el índice resalta la sección visible (scroll-spy)', () => {
+    const observadores: { callback: IntersectionObserverCallback; elementos: Element[] }[] = []
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        elementos: Element[] = []
+        constructor(callback: IntersectionObserverCallback) {
+          observadores.push({ callback, elementos: this.elementos })
+        }
+        observe(el: Element) {
+          this.elementos.push(el)
+        }
+        disconnect() {}
+        unobserve() {}
+      },
+    )
+    montar()
+    const seccion = document.getElementById('modelo') as HTMLElement
+    act(() => {
+      for (const o of observadores) {
+        if (o.elementos.includes(seccion)) {
+          o.callback([{ isIntersecting: true, target: seccion } as unknown as IntersectionObserverEntry], {} as IntersectionObserver)
+        }
+      }
+    })
+    const indice = screen.getByRole('navigation', { name: 'Secciones de la página' })
+    expect(within(indice).getByRole('link', { name: /Modelo/ }).getAttribute('aria-current')).toBe('location')
+    expect(within(indice).getByRole('link', { name: /Datos/ }).getAttribute('aria-current')).toBeNull()
   })
 
   it('si la API falla, muestra guiones y permite reintentar', async () => {
