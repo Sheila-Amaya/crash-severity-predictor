@@ -22,12 +22,16 @@ pip install -r requirements.txt   # producción
 pip install -r requirements-dev.txt  # pruebas y notebooks
 ```
 
-El modelo `data/models/random_forest.pkl` no está en git (tamaño). Se genera
-con `notebooks/06_model_random_forest.ipynb`. Sin él, la API arranca igual y
-`/api/predecir` responde 503.
+El modelo `data/models/random_forest.pkl` y la semilla de la base
+`db/seed/semilla.dump` no están en git (tamaño y microdatos). Descárguelos del
+GitHub Release, verificados contra `SHA256SUMS` (que sí está en git):
 
-La base necesita la semilla `db/seed/semilla.dump` (fuera de git; ver
-[La semilla de la base](#la-semilla-de-la-base)).
+```bash
+bash scripts/descargar-artefactos.sh    # PowerShell: .\scripts\descargar-artefactos.ps1
+```
+
+Detalles y cómo publicar una versión nueva: [db/seed/LEEME.md](db/seed/LEEME.md).
+Sin el modelo, la API arranca igual y `/api/predecir` responde 503.
 
 ### Variables de entorno
 
@@ -145,22 +149,32 @@ navegador ──────────────► web (nginx: SPA + proxy 
 ### Requisitos
 
 - Docker Engine 24+ con Docker Compose v2.24+ (o Docker Desktop).
-- El modelo `data/models/random_forest.pkl` (no está en git; ver más abajo).
-- La semilla de la base `db/seed/semilla.dump` (no está en git; ver más abajo).
-- Unos 3 GB libres en disco y 2 GB de RAM para los contenedores.
+- El modelo y la semilla (no están en git): `scripts/descargar-artefactos.sh`.
+- Unos 3 GB libres en disco y 2 GB de RAM.
 
 ### Pasos
 
 ```bash
-cp .env.example .env            # Windows: copy .env.example .env
+git clone https://github.com/Sheila-Amaya/crash-severity-predictor.git
+cd crash-severity-predictor
+bash scripts/descargar-artefactos.sh   # modelo y semilla, verificados con SHA256SUMS
+cp .env.example .env                   # Windows: copy .env.example .env
 # Edite .env: POSTGRES_PASSWORD y APP_DB_PASSWORD (obligatorias)
-# Coloque el modelo y la semilla (ver abajo) y luego:
 docker compose up -d --build
 ```
 
 La app queda en `http://localhost:8080` (o el `WEB_PORT` elegido). El primer
 arranque restaura la semilla (alrededor de un minuto); los siguientes
 reutilizan el volumen.
+
+**En un servidor con dominio y HTTPS** defina además `DOMINIO` en `.env` y
+añada el override de producción (Caddy publica 80/443 con certificado
+automático; nginx deja de publicar el 8080). Guía completa:
+[docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
 
 ### Variables (`.env`)
 
@@ -170,6 +184,7 @@ reutilizan el volumen.
 | `APP_DB_PASSWORD` | Sí | Contraseña del rol `app_lectura` (solo `SELECT`), con el que se conecta la API. Solo letras y números: va dentro de una URL. |
 | `POSTGRES_DB` | No | Nombre de la base (por defecto `severidad_vial`). |
 | `WEB_PORT` | No | Puerto del host donde escucha nginx (por defecto `8080`). |
+| `DOMINIO` | Solo con `docker-compose.prod.yml` | Dominio público que Caddy sirve por HTTPS. |
 
 Si falta una obligatoria, Compose se detiene con un mensaje que la nombra.
 Genere contraseñas con `openssl rand -hex 24`.
@@ -189,11 +204,18 @@ Genere contraseñas con `openssl rand -hex 24`.
     `/api` a la API (mismo origen, sin CORS);
   - gzip y caché inmutable para `/assets/`;
   - cabeceras de seguridad: CSP con el hash del script del tema, `nosniff`,
-    `Referrer-Policy` y `X-Frame-Options: DENY`. HSTS está comentado en
-    `frontend/nginx.conf`: actívelo solo cuando el sitio se sirva por HTTPS.
+    `Referrer-Policy`, `X-Frame-Options: DENY` y `Cross-Origin-Opener-Policy`;
+  - límites por IP: 10 peticiones/s en `/api` (ráfaga 30) y 30/min en
+    `POST /api/predecir` (ráfaga 10); al superarlos responde **429** con un
+    mensaje JSON y `Retry-After`. Cuerpo máximo 4 KB y tiempos acotados;
+  - `/docs`, `/redoc` y `/openapi.json` responden 404 (no se publican).
+- **caddy** (solo con `docker-compose.prod.yml`): TLS automático para
+  `DOMINIO`, redirección de HTTP a HTTPS y HSTS; único servicio con puertos.
 
-Todos tienen `restart: unless-stopped` y límite de memoria (db 512 MB, api
-1 GB, web 128 MB).
+El rol `app_lectura` tiene `statement_timeout` de 10 s y un máximo de 20
+conexiones (`db/docker/30_limites_app_lectura.sql`). Todos los servicios
+tienen `restart: unless-stopped`, registros con rotación (3 x 10 MB) y límite
+de memoria (db 512 MiB, api 768 MiB, web 64 MiB, caddy 128 MiB).
 
 ### El modelo
 
@@ -203,12 +225,8 @@ arranca igual, lo indica en su log y `/api/predecir` responde **503**. Durante
 el build (`docker compose build api`) se comprueba que el `.pkl` y SHAP cargan
 con las versiones de la imagen.
 
-Para distribuirlo, publíquelo como asset de un GitHub Release junto con su
-huella, igual que la semilla (abajo):
-
-```bash
-sha256sum data/models/random_forest.pkl > data/models/random_forest.pkl.sha256
-```
+Se distribuye como asset de un GitHub Release junto con la semilla, con su
+huella en `SHA256SUMS` (ver [db/seed/LEEME.md](db/seed/LEEME.md)).
 
 ### La semilla de la base
 
@@ -228,23 +246,10 @@ Crea `semilla.dump` y `semilla.dump.sha256`. Un respaldo de
 (copiado como `db/seed/semilla.dump`, con su huella) y se carga en una base
 existente con `scripts/docker/restaurar.*`.
 
-**Publicarla** como asset de un Release (con la [CLI de GitHub](https://cli.github.com/)):
-
-```bash
-gh release create semilla-2026-10 db/seed/semilla.dump db/seed/semilla.dump.sha256 \
-  --title "Semilla de la base" --notes "pg_dump del esquema public (INE 2018-2024)."
-```
-
-**Descargarla y verificarla** antes de levantar la base:
-
-```bash
-gh release download semilla-2026-10 --dir db/seed    # o descárguela desde la página del Release
-cd db/seed && sha256sum -c semilla.dump.sha256       # debe decir: semilla.dump: OK
-```
-
-En PowerShell, compare `(Get-FileHash db\seed\semilla.dump -Algorithm SHA256).Hash`
-con el contenido de `semilla.dump.sha256`. Si el `.sha256` está en `db/seed/`,
-el contenedor también lo verifica antes de restaurar.
+**Descargarla** (con el modelo) y verificarla: `scripts/descargar-artefactos.sh`
+(o `.ps1`). **Publicar una versión nueva** (actualizar `SHA256SUMS` y subir los
+archivos a un Release): pasos en [db/seed/LEEME.md](db/seed/LEEME.md). El
+contenedor vuelve a verificar la huella antes de restaurar.
 
 ### Operación
 

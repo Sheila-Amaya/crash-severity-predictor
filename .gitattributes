@@ -6,3 +6,4 @@ Dockerfile text eol=lf
 *.sql  text eol=lf
 Caddyfile text eol=lf
 *.crontab text eol=lf
+SHA256SUMS text eol=lf
