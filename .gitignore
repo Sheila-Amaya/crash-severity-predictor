@@ -162,7 +162,7 @@ data/models/*.pkl
 
 # Docker: semilla de la base (se publica como asset de un GitHub Release) y respaldos
 db/seed/*.dump
-db/seed/*.dump.sha256
+db/seed/*.dump.*
 respaldos/
 
 # Frontend (Node / Vite)

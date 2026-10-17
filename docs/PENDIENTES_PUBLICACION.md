@@ -16,26 +16,29 @@ Docker (ver "Despliegue con Docker" en el README) parte quedó resuelta.
 
 ## 2. Base de datos
 
-- **Resuelto:** la base corre en un contenedor PostGIS con volumen
-  persistente, así que la app ya no depende de que Supabase pause el proyecto.
-  El modo Supabase queda como alternativa (`docker-compose.supabase.yml`).
+La base es PostgreSQL 17 + PostGIS 3.5 en Docker, en el servidor y en
+desarrollo. Ya no se usa Supabase.
+
+- **Resuelto:** la base corre en un contenedor PostGIS con volumen persistente
+  y se inicializa desde la semilla (`db/seed/semilla.dump`, verificada con
+  SHA-256 y con los conteos).
 - **Resuelto:** usuario de solo lectura. La API se conecta con el rol
   `app_lectura`, que solo tiene `CONNECT` y `SELECT` y transacciones de solo
   lectura. Probado: `INSERT`, `UPDATE` y `CREATE` se rechazan.
-- **Resuelto:** las credenciales van en `.env` (ignorado por git), Compose
-  falla si faltan y no aparecen en los logs (verificado).
-- **Resuelto:** hay respaldo y restauración (`scripts/docker/respaldar.*` y
-  `restaurar.*`), probados de punta a punta.
+- **Resuelto:** las credenciales van en `.env` (ignorado por git), Compose y
+  `dev.ps1` fallan si faltan y no aparecen en los logs (verificado).
+- **Resuelto:** respaldo, restauración y regeneración de la semilla desde la
+  base de Docker (`scripts/docker/respaldar.*`, `restaurar.*` y
+  `generar_semilla.*`), probados de punta a punta.
+- **Resuelto:** en desarrollo, la base se publica solo en `127.0.0.1`
+  (`docker-compose.dev.yml`, puerto 5433); no es accesible desde la red local
+  (probado).
 - **Pendiente:**
   - Programar los respaldos (cron o tarea programada) y copiarlos fuera del
     servidor.
-  - Publicar la semilla `db/seed/semilla.dump` como asset de un GitHub Release,
-    con su SHA-256.
-- **Pendiente (si se sigue usando Supabase), a cargo de la autora:**
-  - activar RLS en las tablas de `public`;
-  - borrar `fallecido_lesionado_old`;
-  - corregir `vehiculo_involucrado`;
-  - y, en modo Supabase, conectar la API con un rol que solo tenga `SELECT`.
+  - Publicar la semilla como asset de un GitHub Release, con su SHA-256.
+  - Al eliminar el proyecto de Supabase, cambiar en el `.env` la `DB_URL` de
+    desarrollo por la local (ver `.env.example`).
 
 ## 3. Modelo (`random_forest.pkl`)
 

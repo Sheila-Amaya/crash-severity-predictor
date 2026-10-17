@@ -1,49 +1,45 @@
-﻿# Genera db/seed/semilla.dump con un pg_dump de SOLO LECTURA de la base
-# configurada en DB_URL (.env de la raíz), p. ej. Supabase.
-# Equivalente a generar_semilla.sh (ver los detalles allí).
+﻿# Genera la semilla (db\seed\semilla.dump + .sha256) desde la base del
+# contenedor db. Equivalente a generar_semilla.sh.
 #
-# Uso (desde la raíz del repo):  .\scripts\docker\generar_semilla.ps1
+# Uso (desde la raíz del repo, con el contenedor db en marcha):
+#   .\scripts\docker\generar_semilla.ps1             # no pisa una semilla existente
+#   .\scripts\docker\generar_semilla.ps1 -Forzar     # la reemplaza (guarda .anterior)
+#   .\scripts\docker\generar_semilla.ps1 -Salida otra\ruta.dump
 
-$ErrorActionPreference = 'Stop'
+param(
+    [string]$Salida,
+    [switch]$Forzar
+)
+
+$ErrorActionPreference = 'Continue'   # docker escribe avisos en stderr
 $raiz = Resolve-Path (Join-Path $PSScriptRoot '..\..')
-$imagen = 'postgis/postgis:17-3.5'
-$semillas = Join-Path $raiz 'db\seed'
-$salida = Join-Path $semillas 'semilla.dump'
-$archivoEnv = Join-Path $raiz '.env'
+Set-Location $raiz
+if (-not $Salida) { $Salida = Join-Path $raiz 'db\seed\semilla.dump' }
+$Salida = [IO.Path]::GetFullPath($Salida)
 
-if (-not (Test-Path $archivoEnv)) { throw 'No existe .env en la raíz (se necesita DB_URL).' }
+function Exigir($paso) { if ($LASTEXITCODE -ne 0) { throw "Falló: $paso (código $LASTEXITCODE)." } }
 
-# Lee DB_URL sin mostrarla; quita comillas y el driver de SQLAlchemy
-$linea = Get-Content $archivoEnv | Where-Object { $_ -match '^\s*DB_URL=' } | Select-Object -Last 1
-if (-not $linea) { throw 'DB_URL no está definida en .env.' }
-$url = ($linea -replace '^\s*DB_URL=', '').Trim().Trim('"').Trim("'")
-$url = $url -replace '^postgresql\+[a-z0-9]+://', 'postgresql://'
-
-# Se pasa al contenedor como variable heredada (-e DB_URL, sin valor visible)
-$env:DB_URL = $url
-# docker escribe avisos en stderr: en PowerShell 5.1 no deben cortar el script
-# (el resultado se valida con $LASTEXITCODE)
-$ErrorActionPreference = 'Continue'
-try {
-    docker image inspect $imagen *> $null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Descargando $imagen..."
-        docker pull -q $imagen | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "No se pudo descargar $imagen." }
-    }
-    Write-Host 'Generando semilla (pg_dump de solo lectura)...'
-    $comando = 'pg_dump "$DB_URL" --format=custom --compress=9 --no-owner --no-privileges --schema=public --exclude-table=public.fallecido_lesionado_old --file=/out/semilla.dump'
-    docker run --rm -e DB_URL -e 'PGOPTIONS=-c default_transaction_read_only=on' -v "${semillas}:/out" $imagen sh -c $comando 2>&1 |
-        ForEach-Object { "$_" -replace '(postgres(ql)?://)\S+', '$1***' }
-    if ($LASTEXITCODE -ne 0) { throw "pg_dump terminó con código $LASTEXITCODE." }
-} finally {
-    Remove-Item Env:\DB_URL -ErrorAction SilentlyContinue
+if ((Test-Path $Salida) -and -not $Forzar) {
+    throw "Ya existe $Salida. Use -Forzar para reemplazarla (se guarda como .anterior)."
 }
 
-if (-not (Test-Path $salida) -or (Get-Item $salida).Length -eq 0) { throw "No se generó $salida." }
+$base = (docker compose exec -T db printenv POSTGRES_DB)
+if ($LASTEXITCODE -ne 0) { throw 'El contenedor db no está en marcha (docker compose up -d db).' }
+$base = $base.Trim()
 
-# Huella en el formato de sha256sum, para publicar junto al asset del Release
-$hash = (Get-FileHash $salida -Algorithm SHA256).Hash.ToLower()
-"$hash  semilla.dump" | Set-Content -Encoding ascii -NoNewline (Join-Path $semillas 'semilla.dump.sha256')
-Write-Host ("Listo: db\seed\semilla.dump ({0:N1} MB)" -f ((Get-Item $salida).Length / 1MB))
+Write-Host "Generando la semilla desde la base $base..."
+docker compose exec -T db pg_dump -U postgres -d $base --format=custom --compress=9 `
+    --no-owner --no-privileges --schema=public --exclude-table=public.fallecido_lesionado_old `
+    --file=/tmp/semilla.dump; Exigir 'pg_dump'
+New-Item -ItemType Directory -Force (Split-Path $Salida) | Out-Null
+docker compose cp db:/tmp/semilla.dump "$Salida.nueva" *> $null; Exigir 'copiar la semilla'
+docker compose exec -T db rm -f /tmp/semilla.dump | Out-Null
+
+if (Test-Path $Salida) { Move-Item -Force $Salida "$Salida.anterior" }
+Move-Item -Force "$Salida.nueva" $Salida
+
+# Huella en el formato de sha256sum (la verifica el contenedor al restaurar)
+$hash = (Get-FileHash $Salida -Algorithm SHA256).Hash.ToLower()
+"$hash  $(Split-Path $Salida -Leaf)" | Set-Content -Encoding ascii -NoNewline "$Salida.sha256"
+Write-Host ("Listo: {0} ({1:N1} MB)" -f $Salida, ((Get-Item $Salida).Length / 1MB))
 Write-Host "SHA-256: $hash"

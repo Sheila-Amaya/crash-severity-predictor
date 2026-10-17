@@ -38,15 +38,19 @@ credenciales; la conexión a la base vive solo en la API.
 
 ## Cómo levantarlo
 
-**Con la API en otra terminal** (desde la raíz del repo):
+**En Windows, todo de una vez:** `.\dev.ps1` (en la raíz) levanta la base
+PostgreSQL/PostGIS de Docker (publicada solo en `127.0.0.1`), espera a que esté
+lista y abre dos ventanas de PowerShell: la API (con el `.venv` activado) y
+`npm run dev`. Requiere Docker en marcha y las contraseñas en el `.env` de la
+raíz (ver el README de la raíz).
+
+**A mano** (desde la raíz del repo):
 
 ```bash
-uvicorn core.app:app --reload        # API en http://localhost:8000
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db   # base en 127.0.0.1:5433
+uvicorn core.app:app --reload        # API en http://localhost:8000 (DB_URL de .env)
 cd frontend && npm run dev           # http://localhost:5173
 ```
-
-**En Windows, todo de una vez:** `.\dev.ps1` (en la raíz) abre dos ventanas de
-PowerShell, una con la API (con el `.venv` activado) y otra con `npm run dev`.
 
 En desarrollo el navegador llama a `/api/...` en el mismo origen y Vite lo
 reenvía a `VITE_API_URL`: no hace falta configurar CORS.
@@ -191,10 +195,10 @@ frontend (esquema, dominio y puerto, sin barra final; p. ej.
 `http://localhost:4173`) a `CORS_ORIGINS` en el `.env` de la API, separado por
 comas, y reinicia la API. `*` se ignora a propósito.
 
-**Supabase pausado.** Los proyectos gratuitos se pausan tras un tiempo sin
-actividad. La API arranca, pero las consultas fallan (500) y su log muestra un
-error de conexión como "tenant/user not found". Restaura el proyecto desde el
-panel de Supabase, espera a que quede activo y pulsa Reintentar.
+**La base de Docker no está levantada.** La API arranca, pero las consultas
+fallan (500) y su log muestra un error de conexión a `127.0.0.1:5433`. Abre
+Docker Desktop y ejecuta `.\dev.ps1` (o `.\dev.ps1 -SoloBase`); luego pulsa
+Reintentar.
 
 **El simulador dice "El modelo no está disponible".** Falta
 `data/models/random_forest.pkl` (no está en git); la API responde 503 en

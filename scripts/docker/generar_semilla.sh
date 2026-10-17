@@ -1,52 +1,49 @@
 #!/usr/bin/env bash
-# Genera db/seed/semilla.dump con un pg_dump de SOLO LECTURA de la base
-# configurada en DB_URL (.env de la raíz), p. ej. Supabase.
+# Genera la semilla (db/seed/semilla.dump + .sha256) desde la base del
+# contenedor db: pg_dump del esquema public, sin dueños ni privilegios (el
+# mismo formato que restaura db/docker/20_semilla.sh en un volumen vacío).
 #
-#   - Esquema public, sin fallecido_lesionado_old.
-#   - Sin dueños ni privilegios (se restaura en otra base con otros roles).
-#   - Usa el pg_dump 17 de la imagen postgis/postgis (no hace falta instalarlo).
-#   - La cadena de conexión nunca se imprime: se pasa al contenedor como
-#     variable de entorno heredada (-e DB_URL, sin valor en la línea de comandos).
-#
-# Uso (desde la raíz del repo):  bash scripts/docker/generar_semilla.sh
+# Uso (desde la raíz del repo, con el contenedor db en marcha):
+#   bash scripts/docker/generar_semilla.sh             # no pisa una semilla existente
+#   bash scripts/docker/generar_semilla.sh --forzar    # la reemplaza (guarda .anterior)
+#   bash scripts/docker/generar_semilla.sh --salida otra/ruta.dump
 set -euo pipefail
 
 raiz="$(cd "$(dirname "$0")/../.." && pwd)"
-imagen="postgis/postgis:17-3.5"
 salida="$raiz/db/seed/semilla.dump"
+forzar=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --forzar) forzar=1; shift ;;
+    --salida) salida="$2"; shift 2 ;;
+    *) echo "Opción desconocida: $1" >&2; exit 1 ;;
+  esac
+done
 
-if [[ ! -f "$raiz/.env" ]]; then
-  echo "ERROR: no existe .env en la raíz (se necesita DB_URL)." >&2
+cd "$raiz"
+export MSYS_NO_PATHCONV=1
+# Git Bash (Windows): docker.exe necesita rutas locales en formato Windows
+ruta_local() { if command -v cygpath >/dev/null 2>&1; then cygpath -w "$1"; else printf '%s' "$1"; fi; }
+
+if [[ -e "$salida" && $forzar -eq 0 ]]; then
+  echo "ERROR: ya existe $salida. Use --forzar para reemplazarla (se guarda como .anterior)." >&2
   exit 1
 fi
 
-# Lee DB_URL del .env sin mostrarla; quita comillas y el driver de SQLAlchemy
-DB_URL="$(grep -E '^[[:space:]]*DB_URL=' "$raiz/.env" | tail -n1 | cut -d= -f2- | tr -d '\r' | sed -E "s/^[\"']//; s/[\"']$//")"
-if [[ -z "$DB_URL" ]]; then
-  echo "ERROR: DB_URL no está definida en .env." >&2
-  exit 1
-fi
-DB_URL="$(printf '%s' "$DB_URL" | sed -E 's#^postgresql\+[a-z0-9]+://#postgresql://#')"
-export DB_URL
+base="$(docker compose exec -T db printenv POSTGRES_DB </dev/null | tr -d '\r')" \
+  || { echo "ERROR: el contenedor db no está en marcha (docker compose up -d db)." >&2; exit 1; }
 
-# En Git Bash (Windows) la ruta del volumen debe ir en formato Windows
-montaje="$raiz/db/seed"
-if pwd -W >/dev/null 2>&1; then montaje="$(cd "$raiz/db/seed" && pwd -W)"; export MSYS_NO_PATHCONV=1; fi
+echo "Generando la semilla desde la base $base..."
+docker compose exec -T db pg_dump -U postgres -d "$base" --format=custom --compress=9 \
+  --no-owner --no-privileges --schema=public --exclude-table=public.fallecido_lesionado_old \
+  --file=/tmp/semilla.dump </dev/null
+mkdir -p "$(dirname "$salida")"
+docker compose cp db:/tmp/semilla.dump "$(ruta_local "$salida.nueva")"
+docker compose exec -T db rm -f /tmp/semilla.dump </dev/null
 
-echo "Generando semilla (pg_dump de solo lectura)..."
-docker run --rm -e DB_URL -e PGOPTIONS='-c default_transaction_read_only=on' \
-  -v "$montaje:/out" "$imagen" \
-  sh -c 'pg_dump "$DB_URL" --format=custom --compress=9 --no-owner --no-privileges \
-           --schema=public --exclude-table=public.fallecido_lesionado_old \
-           --file=/out/semilla.dump' 2>&1 \
-  | sed -E 's#(postgres(ql)?://)[^ ]+#\1***#g'
+if [[ -e "$salida" ]]; then mv -f "$salida" "$salida.anterior"; fi
+mv -f "$salida.nueva" "$salida"
+( cd "$(dirname "$salida")" && sha256sum "$(basename "$salida")" > "$(basename "$salida").sha256" )
 
-if [[ ! -s "$salida" ]]; then
-  echo "ERROR: no se generó $salida." >&2
-  exit 1
-fi
-
-# Huella para publicar junto al asset del Release (y verificar al descargar)
-( cd "$raiz/db/seed" && sha256sum semilla.dump > semilla.dump.sha256 )
-echo "Listo: db/seed/semilla.dump ($(du -h "$salida" | cut -f1))"
-cat "$raiz/db/seed/semilla.dump.sha256"
+echo "Listo: $salida ($(du -h "$salida" | cut -f1))"
+cat "$salida.sha256"

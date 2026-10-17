@@ -1,0 +1,19 @@
+# Override de DESARROLLO: publica la base en 127.0.0.1 (solo esta máquina)
+# para la API de desarrollo (uvicorn), las pruebas de integración y psql.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
+#
+# dev.ps1 lo usa automáticamente. NO lo use en el servidor: allí la base no
+# debe publicar ningún puerto.
+
+services:
+  db:
+    ports:
+      # Solo loopback: no queda expuesta a la red. 5433 por defecto para no
+      # chocar con un PostgreSQL instalado localmente (5432).
+      - "127.0.0.1:${DB_PUERTO_LOCAL:-5433}:5432"
+    # La red "interna" no admite puertos publicados: se añade una de desarrollo
+    networks: [desarrollo]
+
+networks:
+  desarrollo: {}

@@ -3,8 +3,8 @@
 #   docker compose up -d --build
 #
 # Solo "web" publica un puerto. La API y la base viven en una red interna sin
-# salida a internet. Variables: .env (ver .env.example). Servicios api y web:
-# compose.comun.yml. Modo Supabase: docker-compose.supabase.yml (ver README).
+# salida a internet. Variables: .env (ver .env.example).
+# Desarrollo local (base en 127.0.0.1): docker-compose.dev.yml y dev.ps1.
 
 name: severidad-vial
 
@@ -35,21 +35,42 @@ services:
     shm_size: 128m
 
   api:
-    extends: { file: compose.comun.yml, service: api }
+    build:
+      context: .
+      # Verifica en el build que el modelo y SHAP cargan (no se copia a la imagen)
+      additional_contexts:
+        modelos: ./data/models
+    image: severidad-vial/api:latest
+    restart: unless-stopped
     environment:
       # Rol app_lectura: solo SELECT (la API nunca escribe)
       DB_URL: postgresql+psycopg2://app_lectura:${APP_DB_PASSWORD:?Defina APP_DB_PASSWORD en .env (ver .env.example)}@db:5432/${POSTGRES_DB:-severidad_vial}
+      # Mismo origen vía nginx: sin CORS
+      CORS_ORIGINS: ""
+    volumes:
+      # Modelo fuera de la imagen y de git; si falta, /api/predecir responde 503
+      - ./data/models:/app/data/models:ro
     networks: [interna]
     depends_on:
       db:
         condition: service_healthy
+    mem_limit: 1g
 
   web:
-    extends: { file: compose.comun.yml, service: web }
+    build:
+      context: ./frontend
+      args:
+        # Vacía = la API en el mismo origen (/api, vía el proxy de nginx)
+        VITE_API_URL: ""
+    image: severidad-vial/web:latest
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
     networks: [interna, frontal]
     depends_on:
       api:
         condition: service_healthy
+    mem_limit: 128m
 
 networks:
   # Sin salida a internet: base y API solo hablan entre sí y con nginx

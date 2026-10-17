@@ -10,7 +10,10 @@ simulador y la página "Acerca de".
 
 ## Instalación
 
-Requisitos: Python 3.14, una base PostgreSQL con PostGIS (esquema en `db/schema.sql`).
+Requisitos: Python 3.14, Docker (Docker Desktop en Windows) para la base de
+datos, y Node.js 20, 22 o 24+ para el frontend. La base es **PostgreSQL 17 +
+PostGIS 3.5 en Docker** (esquema en `db/schema.sql`), en desarrollo y en el
+servidor.
 
 ```bash
 python -m venv .venv
@@ -23,33 +26,66 @@ El modelo `data/models/random_forest.pkl` no está en git (tamaño). Se genera
 con `notebooks/06_model_random_forest.ipynb`. Sin él, la API arranca igual y
 `/api/predecir` responde 503.
 
+La base necesita la semilla `db/seed/semilla.dump` (fuera de git; ver
+[La semilla de la base](#la-semilla-de-la-base)).
+
 ### Variables de entorno
 
-Se leen de `.env` en la raíz del proyecto (no se sube a git). Ejemplo:
+Se leen de `.env` en la raíz del proyecto (no se sube a git). Copie
+`.env.example` y complete al menos las dos contraseñas:
 
 ```env
-DB_URL=postgresql://<usuario>:<contraseña>@<host>:5432/<base>
-CORS_ORIGINS=http://localhost:5173
+POSTGRES_PASSWORD=<contraseña larga, solo letras y números>
+APP_DB_PASSWORD=<contraseña larga, solo letras y números>
+DB_URL=postgresql+psycopg2://app_lectura:<APP_DB_PASSWORD>@127.0.0.1:5433/severidad_vial
 ```
-
-`http://localhost:5173` es el servidor de desarrollo del frontend (Vite).
 
 | Variable | Obligatoria | Descripción |
 |---|---|---|
-| `DB_URL` | Sí | Cadena de conexión SQLAlchemy a PostgreSQL, p. ej. `postgresql://<usuario>:<contraseña>@<host>:5432/<base>` |
-| `CORS_ORIGINS` | No | Orígenes permitidos, separados por coma. Vacío = ninguno. `*` se ignora |
+| `POSTGRES_PASSWORD` | Sí | Superusuario `postgres` del contenedor db. |
+| `APP_DB_PASSWORD` | Sí | Rol `app_lectura` (solo `SELECT`), con el que se conecta la API. |
+| `DB_URL` | Para uvicorn a mano y `pytest -m integration` | Conexión de la API fuera de Docker: `app_lectura` contra la base publicada en `127.0.0.1`. `dev.ps1` la arma solo. |
+| `DB_PUERTO_LOCAL` | No | Puerto de `127.0.0.1` para la base en desarrollo (por defecto `5433`). |
+| `POSTGRES_DB` | No | Nombre de la base (por defecto `severidad_vial`). |
+| `WEB_PORT` | No | Puerto de nginx en el despliegue (por defecto `8080`). |
+| `CORS_ORIGINS` | No | Orígenes permitidos, separados por coma. Vacío = ninguno; `*` se ignora. Con el proxy de Vite no hace falta. |
 
-### Ejecutar
+### Ejecutar (desarrollo)
+
+En Windows, desde la raíz:
+
+```powershell
+.\dev.ps1                  # base de Docker + API (uvicorn) + frontend (Vite)
+.\dev.ps1 -SoloBase        # solo la base, p. ej. para las pruebas de integración
+.\dev.ps1 -PuertoApi 8001  # si el puerto 8000 está ocupado
+```
+
+`dev.ps1`:
+
+1. Comprueba que Docker esté corriendo y que `.env` tenga las contraseñas; si
+   no, se detiene con un mensaje claro.
+2. Levanta solo el contenedor `db` con `docker-compose.dev.yml`, que lo publica
+   **solo en `127.0.0.1`** (por defecto el puerto 5433; no queda expuesto a la
+   red), y espera a que esté sano con los datos cargados.
+3. Abre dos ventanas: la API (`uvicorn --reload`, con el `.venv`) conectada
+   como `app_lectura`, y el frontend (`npm run dev`, con el proxy de `/api`
+   hacia esa API). La contraseña solo vive en esas ventanas: no se imprime.
+
+Sin `dev.ps1` (Linux/macOS o a mano):
 
 ```bash
-uvicorn core.app:app --reload
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
+uvicorn core.app:app --reload        # usa la DB_URL de .env
 ```
 
 Documentación interactiva: `http://localhost:8000/docs`.
 
-Para publicarlo en un servidor, ver [Despliegue con Docker](#despliegue-con-docker).
+`docker-compose.dev.yml` es solo para desarrollo: en el servidor la base no
+debe publicar ningún puerto. Si después levanta el stack completo sin el
+override (`docker compose up -d`), Compose recrea el contenedor `db` sin el
+puerto; los datos están en el volumen y no se pierden.
 
-En Windows, `.\dev.ps1` abre dos ventanas de PowerShell: la API (con el `.venv` activado) y el frontend (`npm run dev`, en `http://localhost:5173`).
+Para publicarlo en un servidor, ver [Despliegue con Docker](#despliegue-con-docker).
 
 ### Frontend
 
@@ -82,8 +118,12 @@ Código: https://github.com/Sheila-Amaya/crash-severity-predictor
 ```bash
 pytest                      # todo; las de integración se omiten si no hay DB_URL
 pytest -m "not integration" # solo pruebas unitarias (mocks, sin base de datos)
-pytest -m integration       # solo contra la base real (únicamente SELECT)
+pytest -m integration       # contra la base de Docker (únicamente SELECT, rol app_lectura)
 ```
+
+Las de integración usan la `DB_URL` de `.env` (la base local publicada en
+`127.0.0.1`): levántela antes con `.\dev.ps1 -SoloBase` o con
+`docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db`.
 
 ## Despliegue con Docker
 
@@ -130,7 +170,6 @@ reutilizan el volumen.
 | `APP_DB_PASSWORD` | Sí | Contraseña del rol `app_lectura` (solo `SELECT`), con el que se conecta la API. Solo letras y números: va dentro de una URL. |
 | `POSTGRES_DB` | No | Nombre de la base (por defecto `severidad_vial`). |
 | `WEB_PORT` | No | Puerto del host donde escucha nginx (por defecto `8080`). |
-| `SUPABASE_DB_URL` | Solo modo Supabase | Cadena de conexión a la base externa. |
 
 Si falta una obligatoria, Compose se detiene con un mensaje que la nombra.
 Genere contraseñas con `openssl rand -hex 24`.
@@ -176,14 +215,18 @@ sha256sum data/models/random_forest.pkl > data/models/random_forest.pkl.sha256
 `db/seed/semilla.dump` es un `pg_dump` del esquema `public` (sin
 `fallecido_lesionado_old`) de unos 5 MB. Está fuera de git (`.gitignore`).
 
-**Generarla** una vez desde la base de origen (p. ej. Supabase). Es un
-`pg_dump` de solo lectura con el `DB_URL` del `.env`, que no se imprime:
+**Generarla o actualizarla** desde la base de Docker, con el contenedor `db` en
+marcha (mismo formato que restaura el contenedor en un volumen vacío):
 
 ```bash
-bash scripts/docker/generar_semilla.sh       # PowerShell: .\scripts\docker\generar_semilla.ps1
+bash scripts/docker/generar_semilla.sh            # PowerShell: .\scripts\docker\generar_semilla.ps1
+bash scripts/docker/generar_semilla.sh --forzar   # reemplaza la actual y la guarda como semilla.dump.anterior
 ```
 
-Crea `semilla.dump` y `semilla.dump.sha256`.
+Crea `semilla.dump` y `semilla.dump.sha256`. Un respaldo de
+`scripts/docker/respaldar.*` tiene el mismo formato: también sirve como semilla
+(copiado como `db/seed/semilla.dump`, con su huella) y se carga en una base
+existente con `scripts/docker/restaurar.*`.
 
 **Publicarla** como asset de un Release (con la [CLI de GitHub](https://cli.github.com/)):
 
@@ -202,20 +245,6 @@ cd db/seed && sha256sum -c semilla.dump.sha256       # debe decir: semilla.dump:
 En PowerShell, compare `(Get-FileHash db\seed\semilla.dump -Algorithm SHA256).Hash`
 con el contenido de `semilla.dump.sha256`. Si el `.sha256` está en `db/seed/`,
 el contenedor también lo verifica antes de restaurar.
-
-### Modo Supabase (alternativo)
-
-Por defecto la base corre en el contenedor, para no depender de que Supabase
-pause el proyecto por inactividad. Para usar Supabase en su lugar:
-
-```bash
-# En .env: SUPABASE_DB_URL=postgresql://...  (no hacen falta POSTGRES_PASSWORD ni APP_DB_PASSWORD)
-docker compose -f docker-compose.supabase.yml up -d --build
-```
-
-También puede dejar `COMPOSE_FILE=docker-compose.supabase.yml` en `.env` y usar
-`docker compose up -d --build` como siempre; para volver al modo contenedor,
-quite esa línea. Los servicios comunes están en `compose.comun.yml`.
 
 ### Operación
 
@@ -266,8 +295,14 @@ bash scripts/docker/restaurar.sh <archivo.dump>    # PowerShell: .\scripts\docke
   `data/models/random_forest.pkl`; cópielo y ejecute `docker compose restart api`.
 - **`Bind for 0.0.0.0:8080 failed: port is already allocated`**: otro programa
   usa el puerto; cambie `WEB_PORT` en `.env`.
-- **La API queda "unhealthy" en modo Supabase**: el proyecto de Supabase está
-  pausado o `SUPABASE_DB_URL` es incorrecta (vea `docker compose logs api`).
+- **`dev.ps1`: "Docker no está corriendo"**: abra Docker Desktop y espere a
+  que diga *Engine running*.
+- **`dev.ps1` o `docker compose ... up -d db`: puerto 5433 ocupado**: cambie
+  `DB_PUERTO_LOCAL` en `.env` (y el puerto de `DB_URL`).
+- **`pytest -m integration` falla con "connection refused"**: la base local no
+  está publicada; ejecute `.\dev.ps1 -SoloBase` (o el `docker compose` con
+  `docker-compose.dev.yml`) y compruebe que `DB_URL` en `.env` apunte a
+  `127.0.0.1` y a ese puerto.
 - **Cambié `APP_DB_PASSWORD` y la API ya no conecta**: la contraseña del rol se
   fija al crear el volumen. Cámbiela también en la base con
   `docker compose exec db psql -U postgres -d severidad_vial -c "ALTER ROLE app_lectura PASSWORD '<nueva>'"`.
@@ -301,6 +336,12 @@ El conteo de hechos se calcula por separado sobre la tabla `hecho`.
 
 Carga de víctimas: `scripts/cargar_fallecido_lesionado.py`
 (migración `db/migrations/001_fallecido_lesionado_con_datos_propios.sql`).
+La migración ya está aplicada en la semilla de la base de Docker: no hace falta
+volver a ejecutarla. La prueba en seco (`python scripts/cargar_fallecido_lesionado.py`)
+funciona contra la base local con la `DB_URL` de `app_lectura`; `--ejecutar`
+escribe, así que necesitaría el usuario `postgres`
+(`postgresql+psycopg2://postgres:<POSTGRES_PASSWORD>@127.0.0.1:5433/severidad_vial`)
+y, al terminar, `restaurar`/`generar_semilla` para conservar el resultado.
 Las correcciones aplicadas a los datos de origen están en
 `data/clean/correcciones_fallecido_lesionado.csv`.
 
