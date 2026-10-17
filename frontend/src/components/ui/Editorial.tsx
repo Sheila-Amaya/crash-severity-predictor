@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 // Piezas editoriales reutilizables (página "Acerca de", ayuda del simulador y
 // secciones de los paneles del mapa).
@@ -23,52 +23,6 @@ export function EtiquetaSeccion({
       </Tag>
       {derecha !== undefined && <span className="etiqueta cifra">{derecha}</span>}
     </div>
-  )
-}
-
-/** Sección con línea divisoria de 1 px arriba (salvo la primera). */
-export function SeccionEditorial({
-  etiqueta,
-  titulo,
-  children,
-}: {
-  etiqueta: string
-  titulo?: string
-  children?: ReactNode
-}) {
-  return (
-    <section className="flex flex-col gap-4 border-t border-borde py-12 first:border-t-0 first:pt-0">
-      <EtiquetaSeccion>{etiqueta}</EtiquetaSeccion>
-      {titulo && <h2 className="text-3xl font-semibold tracking-tight text-tinta sm:text-4xl">{titulo}</h2>}
-      {children}
-    </section>
-  )
-}
-
-/**
- * Esquema de flujo: cajitas monoespaciadas de borde fino unidas por flechas.
- * En móvil se apila en vertical (flechas hacia abajo).
- */
-export function EsquemaFlujo({ pasos, etiqueta }: { pasos: string[]; etiqueta: string }) {
-  return (
-    <ol
-      aria-label={etiqueta}
-      className="flex flex-col items-stretch gap-2 rounded-sm border border-borde bg-panel p-3 sm:flex-row sm:flex-wrap sm:items-center"
-    >
-      {pasos.map((paso, i) => (
-        <Fragment key={paso}>
-          <li className="rounded-sm border border-borde-fuerte bg-fondo px-3 py-1.5 text-center font-mono text-sm text-tinta">
-            {paso}
-          </li>
-          {i < pasos.length - 1 && (
-            <li aria-hidden="true" className="text-center font-mono text-tenue">
-              <span className="sm:hidden">↓</span>
-              <span className="hidden sm:inline">→</span>
-            </li>
-          )}
-        </Fragment>
-      ))}
-    </ol>
   )
 }
 

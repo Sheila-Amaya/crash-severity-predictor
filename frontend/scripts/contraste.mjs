@@ -32,6 +32,7 @@ const PARES = [
   ['muted', 'surface', TEXTO, 'Texto secundario / panel flotante'],
   ['muted', 'surface2', TEXTO, 'Texto secundario / control del panel'],
   ['accent', 'surface', TEXTO, 'Texto de acento / panel'],
+  ['accent', 'bg', TEXTO, 'Número de sección (Acerca) / fondo de página'],
   ['buttonText', 'button', TEXTO, 'Texto de botón / botón'],
   ['danger', 'surface', TEXTO, 'Texto de error / panel'],
   ['borderStrong', 'surface', GRAFICO, 'Borde de control / panel'],
