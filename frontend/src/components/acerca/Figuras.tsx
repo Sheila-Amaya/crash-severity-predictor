@@ -9,7 +9,9 @@ import { Icono } from './Iconos'
  */
 export function Figuras({ figuras, onAmpliar }: { figuras: Figura[]; onAmpliar: (f: Figura) => void }) {
   return (
-    <div className="grid gap-5 md:grid-cols-2">
+    // auto-rows-fr: todas las filas miden lo que la más alta, así las cuatro
+    // celdas quedan iguales aunque los pies tengan largos distintos
+    <div className="grid auto-rows-fr gap-5 md:grid-cols-2">
       {figuras.map((f) => (
         <figure
           key={f.src}
