@@ -16,6 +16,7 @@ RUN npm run build \
 # -- Servidor --------------------------------------------------------
 FROM nginx:1.28-alpine AS web
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx/proxy_api.conf /etc/nginx/snippets/proxy_api.conf
 COPY --from=compilacion /app/csp-hashes.txt /tmp/csp-hashes.txt
 # Inserta en la CSP el hash del script inline del tema
 RUN hashes="$(cat /tmp/csp-hashes.txt)" \

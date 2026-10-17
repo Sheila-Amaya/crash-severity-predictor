@@ -36,6 +36,15 @@ services:
   web:
     # Solo se llega a nginx a través de Caddy
     ports: !reset []
+    volumes:
+      # Límites por IP con la IP real del cliente (la reenvía Caddy)
+      - ./deploy/nginx/ip-real.conf:/etc/nginx/conf.d/ip-real.conf:ro
+
+  api:
+    environment:
+      # La app llega por el mismo origen; si un navegador llamara a la API
+      # desde otro sitio, solo se aceptaría el dominio propio
+      CORS_ORIGINS: https://${DOMINIO:?Defina DOMINIO en .env (ver .env.example)}
 
 volumes:
   caddy_data:

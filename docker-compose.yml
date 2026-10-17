@@ -22,6 +22,8 @@ services:
       # Carga inicial (solo con el volumen vacío): restaura la semilla y crea
       # el rol de solo lectura. Va como archivo para no ocultar 10_postgis.sh.
       - ./db/docker/20_semilla.sh:/docker-entrypoint-initdb.d/20_semilla.sh:ro
+      # Límites del rol app_lectura (statement_timeout, conexiones)
+      - ./db/docker/30_limites_app_lectura.sql:/docker-entrypoint-initdb.d/30_limites_app_lectura.sql:ro
       - ./db/seed:/seed:ro
     networks: [interna]
     # Sana solo si acepta conexiones Y ya tiene los datos cargados
