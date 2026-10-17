@@ -394,6 +394,70 @@ Las opciones con su descripción se obtienen de `GET /api/catalogos`.
   caso **`hechos` es `null`** y la respuesta incluye un campo `nota` que lo
   explica.
 
+## Explicabilidad del modelo
+
+El modelo es un **Random Forest de 200 árboles** que clasifica a cada víctima
+como fallecida o lesionada a partir de 8 variables del hecho y de la persona.
+Se evaluó en una partición de prueba de 14,389 víctimas (20 % de los datos).
+
+**Tabla I — desempeño en el conjunto de prueba**
+
+| Métrica | Valor |
+|---|---|
+| Accuracy | 0.6949 |
+| F1 ponderado | 0.7233 |
+| ROC-AUC | 0.7336 |
+| Recall de fallecidos | 0.6245 |
+| Precisión de fallecidos | 0.3382 |
+
+Las figuras siguientes, del paper, usan SHAP para mostrar cuánto aporta cada
+variable a la predicción. Sus etiquetas están en inglés: *Accident Type* (tipo
+de evento), *Department* (departamento), *Gender* (sexo), *Age Group* (grupo de
+edad), *Vehicle Type* (tipo de vehículo), *Time Slot* (jornada), *Day of the
+Week* (día de la semana) y *Age Status* (mayor o menor de edad).
+
+### Qué variables pesan más
+
+![Barras horizontales del valor SHAP medio por variable: tipo de evento, departamento y sexo encabezan; día de la semana y mayor o menor de edad son las de menor impacto](docs/img/shap-resumen.png)
+
+Cada barra es el valor SHAP medio de una variable: cuánto mueve, en promedio,
+la salida del modelo. El tipo de evento es la que más pesa (≈0.08), seguido del
+departamento (≈0.07) y el sexo (≈0.06); el día de la semana y si la víctima es
+mayor o menor de edad son las que menos (≈0.015).
+
+### Cómo empuja cada variable, víctima por víctima
+
+![Gráfico de enjambre: por cada variable, puntos de colores entre azul y rojo distribuidos a la izquierda y a la derecha de una línea central en cero](docs/img/shap-abejas.png)
+
+Cada punto es una víctima. Su posición horizontal indica cuánto empujó esa
+variable la predicción hacia fallecido (derecha) o hacia lesionado (izquierda),
+y el color es el valor del código de la variable (azul = código bajo, rojo =
+alto). Como las variables son categorías codificadas, el color indica el número
+de código, no una magnitud; donde solo hay dos códigos se lee directo: en sexo,
+los puntos rojos (2 = mujer) quedan a la izquierda y los azules (1 = hombre) a
+la derecha, y en mayor o menor de edad los rojos (2 = menor) quedan a la
+izquierda.
+
+### Una predicción explicada paso a paso
+
+![Gráfico de cascada de una predicción: parte de 0.5, barras rojas suman y una barra azul resta, hasta llegar a 0.719](docs/img/shap-cascada.png)
+
+Explica una sola predicción. Parte del valor medio del modelo, E[f(X)] = 0.5,
+y cada barra suma (rojo) o resta (azul) hasta llegar a f(x) = 0.719 para esa
+víctima. En este caso, el departamento 17 (Petén) y el tipo de evento 5
+(atropello) suman 0.11 cada uno, y el tipo de vehículo 18 (bicicleta) resta
+0.11.
+
+### Un árbol del bosque (ilustrativo)
+
+![Diagrama de un árbol de decisión truncado a profundidad 3: la primera división es por grupo de edad y luego por sexo, departamento, tipo de vehículo, jornada y tipo de evento](docs/img/arbol-decision.png)
+
+Solo ilustrativo: es uno de los 200 árboles del bosque, cortado a profundidad 3
+(los nodos "(...)" continúan). La predicción final promedia los 200 árboles,
+así que un árbol aislado no explica el modelo.
+
+Estas figuras describen asociaciones en los datos, no causas.
+
 ## Endpoints
 
 Todas las rutas usan el prefijo `/api`. Los ejemplos asumen `http://localhost:8000`.
