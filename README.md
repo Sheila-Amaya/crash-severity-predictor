@@ -269,11 +269,22 @@ base existente, use `restaurar` (abajo).
 
 ```bash
 bash scripts/docker/respaldar.sh                   # PowerShell: .\scripts\docker\respaldar.ps1
+bash scripts/docker/probar_restauracion.sh <archivo.dump>
 bash scripts/docker/restaurar.sh <archivo.dump>    # PowerShell: .\scripts\docker\restaurar.ps1 <archivo.dump>
 ```
 
-- Los respaldos van a `respaldos/` (fuera de git), con su `.sha256`, en el
-  mismo formato que la semilla: un respaldo sirve como semilla nueva.
+- `respaldar.sh` está pensado para cron (ejemplo en
+  [deploy/cron/respaldos.crontab](deploy/cron/respaldos.crontab)):
+  - guarda en `respaldos/diarios/` (fuera de git) con su `.sha256`, y el
+    domingo una copia en `respaldos/semanales/`;
+  - conserva 7 diarios y 4 semanales (`RETENER_DIARIOS`, `RETENER_SEMANALES`);
+  - comprueba que el archivo es legible y que el SHA-256 de la copia coincide
+    con el del contenedor, y lo restaura en una base temporal para comparar
+    los conteos (`probar_restauracion.sh`, no toca la base de la app);
+  - si algo falla, no guarda el respaldo, no poda y sale con código 1.
+- Los respaldos tienen el mismo formato que la semilla: uno sirve como semilla
+  nueva. `respaldar.ps1` es la versión manual para Windows (un archivo en
+  `respaldos/`, sin retención).
 - `restaurar`:
   - verifica la huella y pide escribir `RESTAURAR` (en PowerShell, `-Confirmado`
     omite la pregunta);

@@ -4,7 +4,7 @@
 # muestra los conteos.
 #
 # Uso (desde la raíz del repo, con el stack levantado):
-#   bash scripts/docker/restaurar.sh respaldos/respaldo-AAAAMMDD-HHMMSS.dump
+#   bash scripts/docker/restaurar.sh respaldos/diarios/respaldo-AAAAMMDD-HHMMSS.dump
 set -euo pipefail
 
 archivo="${1:-}"
