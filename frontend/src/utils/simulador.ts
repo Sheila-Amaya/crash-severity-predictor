@@ -56,7 +56,10 @@ export function direccionFactor(prediccion: Prediccion, factor: Factor): Direcci
   return haciaPredicha === predichaEsFallecido ? 'fallecido' : 'lesionado'
 }
 
-/** Puntos porcentuales que el factor suma a la probabilidad de fallecimiento (con signo). */
+/**
+ * Aporte del factor al puntaje hacia fallecido, en la escala de la API (sobre
+ * 100), con signo. Para mostrarlo en la escala 0 a 1 se usa formatoAporte.
+ */
 export function puntosHaciaFallecido(prediccion: Prediccion, factor: Factor): number {
   const magnitud = Math.abs(factor.contribucion)
   return direccionFactor(prediccion, factor) === 'fallecido' ? magnitud : -magnitud
@@ -66,14 +69,31 @@ export function descripcionValor(opciones: OpcionesPrediccion | undefined, facto
   return opciones?.[factor.variable]?.find((o) => o.id === factor.valor)?.descripcion ?? String(factor.valor)
 }
 
-const PUNTOS = new Intl.NumberFormat('es-GT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+// -- Puntaje del modelo -----------------------------------------------------------
+// La API da confianza, probabilidades y contribuciones sobre 100 (predict_proba
+// × 100). Son el puntaje del modelo, no la probabilidad real de fallecer: se
+// entrenó con las clases equilibradas. Se muestran en la escala de 0 a 1.
+
+const PUNTAJE = new Intl.NumberFormat('es-GT', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
+const APORTE = new Intl.NumberFormat('es-GT', { minimumFractionDigits: 3, maximumFractionDigits: 3, signDisplay: 'always' })
+
+// Redondeo a una décima sobre 100 (lo que ya mostraba la interfaz) antes de
+// pasar a 0 a 1; el 1e-9 evita que 9.85 (9.8499… en coma flotante) baje a 9.8.
+const aEscalaUno = (sobre100: number): number =>
+  (Math.sign(sobre100) * Math.round(Math.abs(sobre100) * 10 + 1e-9)) / 1000
+
+/** Puntaje de 0 a 1 a partir de un valor de la API sobre 100 (71.6 → "0.716"). */
+export const formatoPuntaje = (sobre100: number): string => PUNTAJE.format(aEscalaUno(sobre100))
+
+/** Aporte con signo en la escala de 0 a 1 (7.8 → "+0.078"). */
+export const formatoAporte = (sobre100: number): string => APORTE.format(aEscalaUno(sobre100))
 
 /** Explicación en lenguaje sencillo de un factor. */
 export function explicarFactor(prediccion: Prediccion, factor: Factor, opciones?: OpcionesPrediccion): string {
-  const puntos = PUNTOS.format(Math.abs(factor.contribucion))
+  const aporte = formatoPuntaje(Math.abs(factor.contribucion))
   const valor = descripcionValor(opciones, factor)
   const sube = direccionFactor(prediccion, factor) === 'fallecido'
-  return `${factor.etiqueta} «${valor}» ${sube ? 'sube' : 'baja'} la probabilidad de fallecimiento en ${puntos} puntos.`
+  return `${factor.etiqueta} «${valor}» ${sube ? 'sube' : 'baja'} el puntaje hacia fallecido en ${aporte}.`
 }
 
 // -- Errores ---------------------------------------------------------------------

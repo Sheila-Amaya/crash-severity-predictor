@@ -7,6 +7,8 @@ import {
   direccionFactor,
   edadIncoherente,
   explicarFactor,
+  formatoAporte,
+  formatoPuntaje,
   mayorMenorSegunEdad,
   mensajeDeError,
   puntosHaciaFallecido,
@@ -47,9 +49,17 @@ describe('dirección de los factores SHAP', () => {
 
   it('explica el factor en lenguaje sencillo con la descripción del valor', () => {
     expect(explicarFactor(prediccion(1), factor(9.85), OPCIONES)).toBe(
-      'Tipo de evento «Atropello» sube la probabilidad de fallecimiento en 9.9 puntos.',
+      'Tipo de evento «Atropello» sube el puntaje hacia fallecido en 0.099.',
     )
-    expect(explicarFactor(prediccion(1), factor(-2), OPCIONES)).toContain('baja la probabilidad')
+    expect(explicarFactor(prediccion(1), factor(-2), OPCIONES)).toContain('baja el puntaje hacia fallecido')
+  })
+
+  it('muestra el puntaje de la API (sobre 100) en la escala de 0 a 1, sin hablar de probabilidad', () => {
+    expect(formatoPuntaje(71.6)).toBe('0.716')
+    expect(formatoPuntaje(28.4)).toBe('0.284')
+    expect(formatoAporte(7.8)).toBe('+0.078')
+    expect(formatoAporte(-11.26)).toBe('-0.113')
+    expect(explicarFactor(prediccion(2), factor(4.7), OPCIONES)).not.toMatch(/probabilidad|%/)
   })
 })
 

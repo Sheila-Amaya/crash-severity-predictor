@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Simulador } from './Simulador'
@@ -66,16 +66,20 @@ describe('Simulador', () => {
     expect(screen.getAllByText('Elija una opción.')).toHaveLength(8)
   })
 
-  it('muestra la clase, la probabilidad y los factores en lenguaje sencillo', async () => {
+  it('muestra la clase, el puntaje de severidad y los factores en lenguaje sencillo', async () => {
     montar(() => respuesta(200, PREDICCION))
     fireEvent.click(await screen.findByRole('button', { name: 'Usar un ejemplo' }))
     fireEvent.click(screen.getByRole('button', { name: 'Estimar severidad' }))
 
     const titulo = await screen.findByRole('heading', { name: /Clase predicha\s*Fallecido/ })
     await waitFor(() => expect(document.activeElement).toBe(titulo))
-    expect(screen.getByText(/Probabilidad estimada de fallecimiento/)).toBeTruthy()
-    expect(screen.getByText('Tipo de evento «Atropello» sube la probabilidad de fallecimiento en 9.9 puntos.')).toBeTruthy()
-    expect(screen.getByText('Sexo «Hombre» baja la probabilidad de fallecimiento en 2.3 puntos.')).toBeTruthy()
+    // Puntaje hacia fallecido en la escala 0 a 1 (la API lo da sobre 100) y la aclaración
+    const resultado = screen.getByRole('article', { name: /Clase predicha/ })
+    expect(within(resultado).getByText(/Puntaje de severidad \(0 a 1\)/).textContent).toContain('0.612')
+    expect(screen.getByText(/no es la probabilidad real de fallecer/)).toBeTruthy()
+    expect(screen.queryByText(/Probabilidad estimada/)).toBeNull()
+    expect(screen.getByText('Tipo de evento «Atropello» sube el puntaje hacia fallecido en 0.099.')).toBeTruthy()
+    expect(screen.getByText('Sexo «Hombre» baja el puntaje hacia fallecido en 0.023.')).toBeTruthy()
   })
 
   it('la edad sugiere "mayor o menor de edad"', async () => {

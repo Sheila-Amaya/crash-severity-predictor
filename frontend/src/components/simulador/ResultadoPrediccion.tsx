@@ -2,13 +2,17 @@ import { forwardRef } from 'react'
 
 import type { OpcionesPrediccion, Prediccion } from '../../api/types'
 import { usePaleta } from '../../theme/tema'
-import { formatoPorcentaje } from '../../utils/formato'
-import { descripcionValor, direccionFactor, explicarFactor, puntosHaciaFallecido } from '../../utils/simulador'
+import {
+  descripcionValor,
+  direccionFactor,
+  explicarFactor,
+  formatoAporte,
+  formatoPuntaje,
+  puntosHaciaFallecido,
+} from '../../utils/simulador'
 import { EtiquetaSeccion } from '../ui/Editorial'
 
-const PUNTOS = new Intl.NumberFormat('es-GT', { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'always' })
-
-/** Barra de probabilidad dividida: fallecido | lesionado, con valores escritos. */
+/** Barra del puntaje dividida: fallecido | lesionado (suman 1), con valores escritos. */
 function BarraProbabilidad({ prediccion }: { prediccion: Prediccion }) {
   const paleta = usePaleta()
   const { Fallecido, Lesionado } = prediccion.probabilidades
@@ -18,7 +22,7 @@ function BarraProbabilidad({ prediccion }: { prediccion: Prediccion }) {
       <div
         className="flex h-3 overflow-hidden rounded-sm"
         role="img"
-        aria-label={`Probabilidad estimada: fallecido ${formatoPorcentaje(Fallecido)}, lesionado ${formatoPorcentaje(Lesionado)}`}
+        aria-label={`Puntaje de severidad: fallecido ${formatoPuntaje(Fallecido)}, lesionado ${formatoPuntaje(Lesionado)}`}
       >
         <span style={{ width: `${Fallecido}%`, backgroundColor: paleta.serieFallecidos }} />
         <span style={{ width: `${Lesionado}%`, backgroundColor: paleta.serieLesionados }} />
@@ -26,10 +30,10 @@ function BarraProbabilidad({ prediccion }: { prediccion: Prediccion }) {
       <div className="cifra mt-1 flex justify-between text-xs">
         <span className="text-tinta">
           <span aria-hidden="true" className="mr-1 inline-block h-2 w-2" style={{ backgroundColor: paleta.serieFallecidos }} />
-          Fallecido {formatoPorcentaje(Fallecido)}
+          Fallecido {formatoPuntaje(Fallecido)}
         </span>
         <span className="text-tinta">
-          Lesionado {formatoPorcentaje(Lesionado)}
+          Lesionado {formatoPuntaje(Lesionado)}
           <span aria-hidden="true" className="ml-1 inline-block h-2 w-2" style={{ backgroundColor: paleta.serieLesionados }} />
         </span>
       </div>
@@ -59,7 +63,7 @@ function FactoresShap({ prediccion, opciones }: { prediccion: Prediccion; opcion
                 <span className="text-tinta">
                   {factor.etiqueta}: <span className="font-semibold">{descripcionValor(opciones, factor)}</span>
                 </span>
-                <span className="cifra shrink-0 text-xs text-tenue">{PUNTOS.format(puntos)} pts</span>
+                <span className="cifra shrink-0 text-xs text-tenue">{formatoAporte(puntos)}</span>
               </div>
               {/* Eje central: la barra crece a la derecha (fallecido) o a la izquierda (lesionado) */}
               <div className="relative h-2.5 rounded-sm bg-panel-2" aria-hidden="true">
@@ -112,8 +116,12 @@ export const ResultadoPrediccion = forwardRef<HTMLHeadingElement, Props>(functio
         </span>
       </h2>
       <p className="mt-1 text-sm text-tinta">
-        Probabilidad estimada de {fallecido ? 'fallecimiento' : 'lesión'}:{' '}
-        <span className="cifra font-semibold">{formatoPorcentaje(prediccion.confianza)}</span>
+        Puntaje de severidad (0 a 1):{' '}
+        <span className="cifra font-semibold">{formatoPuntaje(prediccion.probabilidades.Fallecido)}</span>
+      </p>
+      <p className="mt-1 text-xs text-tenue">
+        Es un puntaje del modelo entre 0 y 1; no es la probabilidad real de fallecer (en los datos, los fallecidos son
+        el 19.1 %).
       </p>
       {desactualizado && (
         <p role="status" className="mt-2 text-xs text-acento">

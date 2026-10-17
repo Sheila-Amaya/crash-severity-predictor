@@ -36,12 +36,14 @@ export function AyudaResultado() {
             según un Random Forest entrenado con datos del INE 2018–2024.
           </>,
           <>
-            <strong>Probabilidad estimada</strong>: el promedio de lo que estiman los árboles del modelo para esa
-            clase. No es una certeza: el modelo acierta en torno al 69 % de los casos de prueba (accuracy 0.6949).
+            <strong>Puntaje de severidad (0 a 1)</strong>: el promedio de lo que estiman los árboles del modelo para
+            fallecido; con 0.5 o más, la clase predicha es Fallecido. No es la probabilidad real de fallecer: el modelo
+            se entrenó con las clases equilibradas, así que su puntaje medio es 0.5 y no el 19.1 % de los datos. Tampoco
+            es una certeza: acierta en torno al 69 % de los casos de prueba (accuracy 0.6949).
           </>,
           <>
-            <strong>Factores (SHAP)</strong>: cuánto movió cada variable la probabilidad de fallecimiento, en puntos
-            porcentuales, frente al promedio del modelo. Solo se muestran los 3 que más pesaron; el resto también
+            <strong>Factores (SHAP)</strong>: cuánto movió cada variable el puntaje hacia fallecido, en la misma escala
+            de 0 a 1, frente al promedio del modelo. Solo se muestran los 3 que más pesaron; el resto también
             influye.
           </>,
           <>
