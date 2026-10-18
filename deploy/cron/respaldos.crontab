@@ -1,0 +1,20 @@
+# Ejemplo de crontab para los respaldos automáticos (servidor Linux).
+#
+# Instalar para el usuario que administra el stack (debe poder usar docker):
+#   1. Cambie /home/ADMIN/crash-severity-predictor por la ruta del repo.
+#   2. crontab -l 2>/dev/null | cat - deploy/cron/respaldos.crontab | crontab -
+#      (o copie las líneas con: crontab -e)
+#   3. Compruebe: crontab -l
+#
+# Cron no carga el perfil del usuario: PATH y SHELL se fijan aquí. La hora
+# es la del servidor (timedatectl).
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Cada día a las 03:30: respaldo verificado (7 diarios + 4 semanales). El
+# registro queda en respaldos/respaldar.log; un fallo deja "ERROR" en él.
+30 3 * * * cd /home/ADMIN/crash-severity-predictor && mkdir -p respaldos && bash scripts/docker/respaldar.sh >> respaldos/respaldar.log 2>&1
+
+# Cada lunes a las 04:00: recorta el registro a sus últimas 2000 líneas.
+0 4 * * 1 cd /home/ADMIN/crash-severity-predictor && tail -n 2000 respaldos/respaldar.log > respaldos/respaldar.log.tmp && mv respaldos/respaldar.log.tmp respaldos/respaldar.log

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mapa de severidad vial · Guatemala</title>
+    <meta name="description" content="Mapa de víctimas de hechos de tránsito en Guatemala (INE 2018–2024) por departamento y municipio, con filtros, series y ranking." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="theme-color" content="#000000" />
+    <script>
+      // Tema antes de cargar la app (evita un destello): la elección guardada
+      // manda; si no hay, prefers-color-scheme. Colores = bg de palette.json.
+      ;(function () {
+        var tema = null
+        try { tema = localStorage.getItem('severidad-vial:tema') } catch (e) {}
+        if (tema !== 'dark' && tema !== 'light') {
+          tema = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+        }
+        document.documentElement.dataset.theme = tema
+        document.documentElement.style.background = tema === 'light' ? '#E8EAED' : '#0B0C0E'
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

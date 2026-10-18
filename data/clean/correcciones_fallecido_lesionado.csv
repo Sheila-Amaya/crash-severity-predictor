@@ -1,0 +1,7 @@
+num_corre,anio_ocu,columna,valor_original,valor_nuevo,motivo
+5,2018,anio_ocu,3,2018,año fuera de 2018-2024; se usa año_carga del INE
+10387,2019,depto_ocu,22,21,depto_ocu inconsistente con mupio_ocu=2106 (código DDMM)
+10388,2019,depto_ocu,22,21,depto_ocu inconsistente con mupio_ocu=2106 (código DDMM)
+10573,2019,depto_ocu,21,22,depto_ocu inconsistente con mupio_ocu=2201 (código DDMM)
+764,2024,depto_ocu,16,3,depto_ocu inconsistente con mupio_ocu=301 (código DDMM)
+765,2024,depto_ocu,16,3,depto_ocu inconsistente con mupio_ocu=301 (código DDMM)

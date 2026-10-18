@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Colores: variables --c-* generadas desde src/theme/palette.json
+ * (única fuente, verificada con `npm run contraste`).
+ */
+@theme {
+  --color-fondo: var(--c-bg);
+  --color-barra: var(--c-topbar);
+  --color-panel: var(--c-surface);
+  --color-panel-2: var(--c-surface2);
+  --color-tinta: var(--c-text);
+  --color-tenue: var(--c-muted);
+  --color-borde: var(--c-border);
+  --color-borde-fuerte: var(--c-border-strong);
+  --color-acento: var(--c-accent);
+  --color-boton: var(--c-button);
+  --color-boton-texto: var(--c-button-text);
+  --color-foco: var(--c-focus);
+  --color-peligro: var(--c-danger);
+
+  --font-sans: "Inter Variable", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "Cascadia Mono", monospace;
+}
+
+@layer base {
+  /* Sombra de paneles flotantes: densa en oscuro, suave en claro */
+  :root {
+    --sombra-panel: 0 10px 30px rgb(0 0 0 / 0.45);
+  }
+  :root[data-theme="light"] {
+    --sombra-panel: 0 6px 20px rgb(21 23 26 / 0.12);
+  }
+
+  html {
+    background-color: var(--c-bg);
+    color: var(--c-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  /* Barras de desplazamiento finas y discretas */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-border-strong) transparent;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--c-focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Etiqueta técnica: monoespaciada, mayúsculas, espaciada */
+  .etiqueta {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+  }
+
+  /* Logotipo: el anillo exterior late despacio (nada si se pide menos movimiento) */
+  @media (prefers-reduced-motion: no-preference) {
+    .logo-pulso {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: logo-pulso 3.6s ease-in-out infinite;
+    }
+  }
+  @keyframes logo-pulso {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.45;
+      transform: scale(0.94);
+    }
+  }
+
+  /* Cifras: monoespaciadas tabulares */
+  .cifra {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  /* Controles de MapLibre (zoom) en el estilo de los paneles */
+  .maplibregl-ctrl-group {
+    background: var(--c-surface) !important;
+    border: 1px solid var(--c-border-strong);
+    border-radius: 0.25rem !important;
+    box-shadow: var(--sombra-panel) !important;
+  }
+  .maplibregl-ctrl-group button + button {
+    border-top: 1px solid var(--c-border) !important;
+  }
+  [data-theme="dark"] .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+    filter: invert(1);
+  }
+  .maplibregl-ctrl-group button:hover {
+    background-color: var(--c-surface2) !important;
+  }
+
+  /* Foco del zoom igual al del resto de la app */
+  .maplibregl-ctrl button:focus-visible {
+    outline: 2px solid var(--c-focus) !important;
+    outline-offset: 1px;
+    box-shadow: none !important;
+  }
+
+  /* Zoom en la esquina inferior derecha, a 16 px de los bordes */
+  /* (!important: el CSS de MapLibre va sin capa y ganaría a @layer) */
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+    margin: 0 16px 16px 0 !important;
+  }
+
+  /* Pantallas pequeñas: abajo están la barra y las hojas; el zoom sube a la
+     esquina superior derecha, bajo la franja de KPIs */
+  @media (max-width: 1023px) {
+    .maplibregl-ctrl-bottom-right {
+      top: 5.5rem !important;
+      bottom: auto !important;
+    }
+    .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+      margin: 0 16px 0 0 !important;
+    }
+  }
+
+  /* Etiquetas HTML sobre el mapa (no capturan el cursor) */
+  .etiqueta-mapa {
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-map-label);
+    white-space: nowrap;
+  }
+
+  /* En pantallas pequeñas los nombres se amontonan: se consultan al tocar */
+  @media (max-width: 639px) {
+    .etiqueta-mapa {
+      display: none;
+    }
+  }
+
+  .etiqueta-contexto,
+  .coordenada-mapa {
+    pointer-events: none;
+    font-family: var(--font-mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-map-context-label);
+    white-space: nowrap;
+  }
+
+  .etiqueta-contexto {
+    font-size: 9px;
+  }
+
+  .capa-coordenadas {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .coordenada-mapa {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 8.5px;
+    letter-spacing: 0.06em;
+  }
+
+  .cifra-burbuja {
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Panel flotante sobre el mapa */
+  .flotante {
+    background-color: color-mix(in srgb, var(--c-surface) 94%, transparent);
+    border: 1px solid var(--c-border);
+    border-radius: 0.25rem;
+    box-shadow: var(--sombra-panel);
+    backdrop-filter: blur(8px);
+  }
+}

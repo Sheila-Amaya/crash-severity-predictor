@@ -1,0 +1,8 @@
+{
+  "modelo": "XGBoost",
+  "accuracy": 0.6718,
+  "f1_score": 0.7053,
+  "roc_auc": 0.7392,
+  "precision_fallecido": 0.3264,
+  "recall_fallecido": 0.6754
+}

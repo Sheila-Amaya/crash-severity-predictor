@@ -1,0 +1,6 @@
+*
+!requirements.txt
+!core/
+!data/clean/train.parquet
+**/__pycache__
+**/*.pyc

@@ -1,0 +1,45 @@
+# Caddy: entrada pública en modo servidor (docker-compose.prod.yml).
+# Termina TLS con certificados automáticos (Let's Encrypt / ZeroSSL) para
+# {$DOMINIO} y reenvía todo a nginx (servicio web), que conserva la CSP, el
+# resto de cabeceras, los límites por IP y el proxy de /api. El puerto 80 solo
+# redirige a HTTPS. Con DOMINIO=localhost Caddy usa su CA interna (pruebas).
+
+{
+	# Sin API de administración: la configuración cambia reiniciando el
+	# contenedor y no queda un puerto de control abierto.
+	admin off
+
+	servers {
+		# Cortar clientes lentos; las respuestas de la app tardan < 1 s
+		timeouts {
+			read_header 10s
+			read_body 10s
+			write 60s
+			idle 2m
+		}
+		max_header_size 16KB
+	}
+}
+
+{$DOMINIO} {
+	# Las peticiones de la app son GET o el POST del simulador (~200 bytes)
+	request_body {
+		max_size 8KB
+	}
+
+	header {
+		# HSTS solo aquí (siempre HTTPS). Sin includeSubDomains ni preload
+		# para no forzar otros subdominios del mismo dominio.
+		Strict-Transport-Security "max-age=31536000"
+		# No anunciar el software del proxy
+		-Server
+		-Via
+	}
+
+	reverse_proxy web:80 {
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 45s
+		}
+	}
+}

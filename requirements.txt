@@ -1,0 +1,14 @@
+# Dependencias de producción (API FastAPI + modelo Random Forest + SHAP)
+fastapi==0.136.3
+uvicorn==0.48.0
+pydantic==2.13.4
+pydantic-settings==2.14.2
+python-dotenv==1.2.2
+SQLAlchemy==2.0.51
+psycopg2-binary==2.9.12
+joblib==1.5.3
+numpy==2.4.6
+pandas==3.0.3
+pyarrow==24.0.0
+scikit-learn==1.8.0
+shap==0.52.0

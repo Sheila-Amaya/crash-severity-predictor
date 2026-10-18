@@ -1,0 +1,576 @@
+import logging
+from sqlalchemy import text
+
+from core.schemas.filters import (
+    ANIOS,
+    DEPTOS,
+    DIAS_SEMANA,
+    EDADES_QUINQUENALES,
+    G_HORA_5,
+    MUNICIPIOS,
+    SEXOS,
+    TIPOS_EVENTO,
+    TIPOS_VEHICULO,
+)
+
+logger = logging.getLogger(__name__)
+
+
+def get_departments(db):
+    logger.info("Loading departments catalog")
+
+    query = text("""
+        SELECT
+            depto_ocu,
+            nombre
+        FROM cat_departamento
+        ORDER BY nombre;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "depto_ocu": row.depto_ocu,
+            "nombre": row.nombre
+        }
+        for row in result
+    ]
+    
+    
+def get_municipalities(db, depto_ocu: int):
+    logger.info("Loading municipalities catalog")
+
+    query = text("""
+        SELECT
+            mupio_ocu,
+            depto_ocu,
+            nombre
+        FROM cat_municipio
+        WHERE depto_ocu = :depto_ocu
+        ORDER BY nombre;
+    """)
+
+    result = db.execute(
+        query,
+        {"depto_ocu": depto_ocu}
+    )
+
+    return [
+        {
+            "mupio_ocu": row.mupio_ocu,
+            "depto_ocu": row.depto_ocu,
+            "nombre": row.nombre
+        }
+        for row in result
+    ]
+
+def get_days(db):
+    logger.info("Loading days of week catalog")
+
+    query = text("""
+        SELECT
+            dia_sem_ocu,
+            nombre
+        FROM cat_dia_semana
+        ORDER BY dia_sem_ocu;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "dia_sem_ocu": row.dia_sem_ocu,
+            "nombre": row.nombre
+        }
+        for row in result
+    ]
+
+def get_hour_groups(db):
+    logger.info("Loading hour groups catalog")
+
+    query = text("""
+        SELECT
+            g_hora,
+            descripcion
+        FROM cat_grupo_hora
+        ORDER BY g_hora;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "g_hora": row.g_hora,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+    
+
+def get_hour_groups5(db):
+    logger.info("Loading 5-hour groups catalog")
+
+    query = text("""
+        SELECT
+            g_hora_5,
+            g_hora,
+            descripcion
+        FROM cat_grupo_hora_5
+        ORDER BY g_hora_5;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "g_hora_5": row.g_hora_5,
+            "g_hora": row.g_hora,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+
+def get_event_types(db):
+    logger.info("Loading event types catalog")
+
+    query = text("""
+        SELECT
+            tipo_eve,
+            descripcion
+        FROM cat_tipo_evento
+        ORDER BY tipo_eve;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "tipo_eve": row.tipo_eve,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+
+
+def get_vehicle_types(db):
+    logger.info("Loading vehicle types catalog")
+
+    query = text("""
+        SELECT
+            tipo_veh,
+            descripcion
+        FROM cat_tipo_vehiculo
+        ORDER BY tipo_veh;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "tipo_veh": row.tipo_veh,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+    
+def get_vehicle_brands(db):
+    logger.info("Loading vehicle brands catalog")
+
+    query = text("""
+        SELECT
+            marca_veh,
+            nombre
+        FROM cat_marca_vehiculo
+        ORDER BY nombre;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "marca_veh": row.marca_veh,
+            "nombre": row.nombre
+        }
+        for row in result
+    ]
+
+def get_vehicle_model_groups(db):
+    logger.info("Loading vehicle model groups catalog")
+
+    query = text("""
+        SELECT
+            g_modelo_veh,
+            descripcion
+        FROM cat_grupo_modelo
+        ORDER BY g_modelo_veh;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "g_modelo_veh": row.g_modelo_veh,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+
+def get_vehicle_models(db, marca_veh: int):
+    logger.info("Loading vehicle models catalog")
+
+    query = text("""
+        SELECT
+            modelo_veh,
+            marca_veh,
+            g_modelo_veh,
+            nombre,
+            anio
+        FROM cat_modelo_vehiculo
+        WHERE marca_veh = :marca_veh
+        ORDER BY nombre;
+    """)
+
+    result = db.execute(
+        query,
+        {"marca_veh": marca_veh}
+    )
+
+    return [
+        {
+            "modelo_veh": row.modelo_veh,
+            "marca_veh": row.marca_veh,
+            "g_modelo_veh": row.g_modelo_veh,
+            "nombre": row.nombre,
+            "anio": row.anio
+        }
+        for row in result
+    ]
+
+def get_vehicle_colors(db):
+    logger.info("Loading vehicle colors catalog")
+
+    query = text("""
+        SELECT
+            color_veh,
+            nombre
+        FROM cat_color_vehiculo
+        ORDER BY nombre;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "color_veh": row.color_veh,
+            "nombre": row.nombre
+        }
+        for row in result
+    ]
+
+def get_genders(db):
+    logger.info("Loading genders catalog")
+
+    query = text("""
+        SELECT
+            sexo_per,
+            descripcion
+        FROM cat_sexo
+        ORDER BY sexo_per;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "sexo_per": row.sexo_per,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+
+def get_age_groups_80(db):
+    logger.info("Loading 80+ age groups catalog")
+
+    query = text("""
+        SELECT
+            g_edad_80ymas,
+            descripcion
+        FROM cat_grupo_edad_80
+        ORDER BY g_edad_80ymas;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "g_edad_80ymas": row.g_edad_80ymas,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+
+def get_age_groups_60(db):
+    logger.info("Loading 60+ age groups catalog")
+
+    query = text("""
+        SELECT
+            g60.g_edad_60ymas,
+            g60.descripcion,
+            g80.g_edad_80ymas,
+            g80.descripcion AS descripcion_80
+        FROM cat_grupo_edad_60 g60
+        INNER JOIN cat_grupo_edad_80 g80
+            ON g60.g_edad_80ymas = g80.g_edad_80ymas
+        ORDER BY g60.g_edad_60ymas;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "g_edad_60ymas": row.g_edad_60ymas,
+            "descripcion": row.descripcion,
+            "g_edad_80ymas": row.g_edad_80ymas,
+            "descripcion_80": row.descripcion_80
+        }
+        for row in result
+    ]
+
+def get_quinquennial_ages(db):
+    logger.info("Loading quinquennial ages catalog")
+
+    query = text("""
+        SELECT
+            eq.edad_quinquenales,
+            eq.descripcion,
+
+            g60.g_edad_60ymas,
+            g60.descripcion AS descripcion_60,
+
+            g80.g_edad_80ymas,
+            g80.descripcion AS descripcion_80
+
+        FROM cat_edad_quinquenal eq
+
+        INNER JOIN cat_grupo_edad_60 g60
+            ON eq.g_edad_60ymas = g60.g_edad_60ymas
+
+        INNER JOIN cat_grupo_edad_80 g80
+            ON g60.g_edad_80ymas = g80.g_edad_80ymas
+
+        ORDER BY eq.edad_quinquenales;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "edad_quinquenales": row.edad_quinquenales,
+            "descripcion": row.descripcion,
+            "g_edad_60ymas": row.g_edad_60ymas,
+            "descripcion_60": row.descripcion_60,
+            "g_edad_80ymas": row.g_edad_80ymas,
+            "descripcion_80": row.descripcion_80
+        }
+        for row in result
+    ]
+
+def get_major_minor(db):
+    logger.info("Loading major/minor catalog")
+
+    query = text("""
+        SELECT
+            mayor_menor,
+            descripcion
+        FROM cat_mayor_menor
+        ORDER BY mayor_menor;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "mayor_menor": row.mayor_menor,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+
+def get_driver_statuses(db):
+    logger.info("Loading driver statuses catalog")
+
+    query = text("""
+        SELECT
+            estado_con,
+            descripcion
+        FROM cat_estado_conductor
+        ORDER BY estado_con;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "estado_con": row.estado_con,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+
+def get_hospitalizations(db):
+    logger.info("Loading hospitalization catalog")
+
+    query = text("""
+        SELECT
+            int_o_noint,
+            descripcion
+        FROM cat_internado
+        ORDER BY int_o_noint;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "int_o_noint": row.int_o_noint,
+            "descripcion": row.descripcion
+        }
+        for row in result
+    ]
+
+def get_fall_les(db):
+    logger.info("Loading injury/fatality catalog")
+
+    query = text("""
+        SELECT
+            fall_les,
+            nombre
+        FROM cat_fall_les
+        ORDER BY fall_les;
+    """)
+
+    result = db.execute(query)
+
+    return [
+        {
+            "fall_les": row.fall_les,
+            "nombre": row.nombre
+        }
+        for row in result
+    ]
+
+
+# -- Opciones de los menús de filtros (/api/catalogos) -----------------
+
+# menú -> (tabla, columna código, columna descripción, códigos válidos)
+FILTER_CATALOGS = {
+    "depto": ("cat_departamento", "depto_ocu", "nombre", DEPTOS),
+    "g_hora_5": ("cat_grupo_hora_5", "g_hora_5", "descripcion", G_HORA_5),
+    "dia_sem_ocu": ("cat_dia_semana", "dia_sem_ocu", "nombre", DIAS_SEMANA),
+    "tipo_eve": ("cat_tipo_evento", "tipo_eve", "descripcion", TIPOS_EVENTO),
+    "tipo_veh": ("cat_tipo_vehiculo", "tipo_veh", "descripcion", TIPOS_VEHICULO),
+    "sexo": ("cat_sexo", "sexo_per", "descripcion", SEXOS),
+    "edad_quinquenales": ("cat_edad_quinquenal", "edad_quinquenales", "descripcion", EDADES_QUINQUENALES),
+}
+
+
+def get_filter_options(db):
+    """
+    Opciones (id + descripción) de cada menú de filtros, limitadas a los
+    códigos que existen en los datos. Los códigos 99/9/18/4 se muestran con
+    la descripción de su catálogo ("Ignorado" / "Ignorada").
+    """
+    logger.info("Loading filter options")
+
+    options = {
+        "anio": [{"id": anio, "descripcion": str(anio)} for anio in sorted(ANIOS)],
+    }
+
+    for menu, (table, code_column, description_column, valid_codes) in FILTER_CATALOGS.items():
+        query = text(f"""
+            SELECT
+                {code_column} AS id,
+                {description_column} AS descripcion
+            FROM {table}
+            WHERE {code_column} = ANY(:codigos)
+            ORDER BY {code_column};
+        """)
+
+        result = db.execute(query, {"codigos": sorted(valid_codes)})
+
+        options[menu] = [
+            {"id": row.id, "descripcion": row.descripcion}
+            for row in result
+        ]
+
+    query = text("""
+        SELECT
+            mupio_ocu AS id,
+            nombre AS descripcion,
+            depto_ocu AS depto
+        FROM cat_municipio
+        WHERE mupio_ocu = ANY(:codigos)
+        ORDER BY depto_ocu, nombre;
+    """)
+
+    result = db.execute(query, {"codigos": sorted(MUNICIPIOS)})
+
+    options["municipio"] = [
+        {"id": row.id, "descripcion": row.descripcion, "depto": row.depto}
+        for row in result
+    ]
+
+    return options
+
+# -- Opciones del simulador (/api/predecir/opciones) -------------------
+
+# variable del modelo -> (tabla, columna código, columna descripción)
+MODEL_CATALOGS = {
+    "tipo_eve": ("cat_tipo_evento", "tipo_eve", "descripcion"),
+    "tipo_veh": ("cat_tipo_vehiculo", "tipo_veh", "descripcion"),
+    "g_hora_5": ("cat_grupo_hora_5", "g_hora_5", "descripcion"),
+    "dia_sem_ocu": ("cat_dia_semana", "dia_sem_ocu", "nombre"),
+    "sexo_per": ("cat_sexo", "sexo_per", "descripcion"),
+    "edad_quinquenales": ("cat_edad_quinquenal", "edad_quinquenales", "descripcion"),
+    "mayor_menor": ("cat_mayor_menor", "mayor_menor", "descripcion"),
+    "depto_ocu": ("cat_departamento", "depto_ocu", "nombre"),
+}
+
+NOTA_OPCIONES_MODELO = (
+    "Algunos códigos del catálogo general no se ofrecen en el simulador porque "
+    "el modelo no los vio en entrenamiento: los valores 'Ignorado' (99, 9 y la "
+    "jornada Ignorada) se imputaron con la moda antes de entrenar, y algunos "
+    "tipos de vehículo no aparecen en los datos de entrenamiento."
+)
+
+
+def get_prediction_options(db, training_codes: dict) -> dict:
+    """
+    Opciones (id + descripción) de las 8 variables del modelo, limitadas a
+    los códigos de entrenamiento (los mismos que valida /api/predecir).
+    """
+    logger.info("Loading prediction options")
+
+    options = {}
+
+    for variable, (table, code_column, description_column) in MODEL_CATALOGS.items():
+        query = text(f"""
+            SELECT
+                {code_column} AS id,
+                {description_column} AS descripcion
+            FROM {table}
+            WHERE {code_column} = ANY(:codigos)
+            ORDER BY {code_column};
+        """)
+
+        result = db.execute(query, {"codigos": sorted(training_codes[variable])})
+
+        options[variable] = [
+            {"id": row.id, "descripcion": row.descripcion}
+            for row in result
+        ]
+
+    options["nota"] = NOTA_OPCIONES_MODELO
+
+    return options

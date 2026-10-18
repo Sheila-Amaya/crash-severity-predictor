@@ -1,0 +1,101 @@
+# Stack completo: base PostGIS + API FastAPI + nginx con la SPA.
+#
+#   docker compose up -d --build
+#
+# Solo "web" publica un puerto. La API y la base viven en una red interna sin
+# salida a internet. Variables: .env (ver .env.example).
+# Desarrollo local (base en 127.0.0.1): docker-compose.dev.yml y dev.ps1.
+
+name: severidad-vial
+
+# Registros de Docker con rotación: como máximo 3 archivos de 10 MB por
+# servicio, para que no llenen el disco del servidor.
+x-registros: &registros
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Memoria (pensada para un servidor de 2 GB; ver docs/DESPLIEGUE.md): la suma
+# de los límites (db 512 + api 768 + web 64, + caddy 128 en modo servidor =
+# 1.47 GiB) deja ~0.5 GiB al sistema aunque todos llegaran a su tope. Picos
+# medidos: api ~580 MiB (modelo + SHAP), db ~300 MiB (incluye caché), web
+# ~20 MiB, caddy ~30 MiB.
+
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-severidad_vial}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD en .env (ver .env.example)}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Defina APP_DB_PASSWORD en .env (ver .env.example)}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Carga inicial (solo con el volumen vacío): restaura la semilla y crea
+      # el rol de solo lectura. Va como archivo para no ocultar 10_postgis.sh.
+      - ./db/docker/20_semilla.sh:/docker-entrypoint-initdb.d/20_semilla.sh:ro
+      # Límites del rol app_lectura (statement_timeout, conexiones)
+      - ./db/docker/30_limites_app_lectura.sql:/docker-entrypoint-initdb.d/30_limites_app_lectura.sql:ro
+      - ./db/seed:/seed:ro
+    networks: [interna]
+    # Sana solo si acepta conexiones Y ya tiene los datos cargados
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d $${POSTGRES_DB} && psql -U postgres -d $${POSTGRES_DB} -tAc 'SELECT 1 FROM fallecido_lesionado LIMIT 1' | grep -q 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+    mem_limit: 512m
+    shm_size: 128m
+    logging: *registros
+
+  api:
+    build:
+      context: .
+      # Verifica en el build que el modelo y SHAP cargan (no se copia a la imagen)
+      additional_contexts:
+        modelos: ./data/models
+    image: severidad-vial/api:latest
+    restart: unless-stopped
+    environment:
+      # Rol app_lectura: solo SELECT (la API nunca escribe)
+      DB_URL: postgresql+psycopg2://app_lectura:${APP_DB_PASSWORD:?Defina APP_DB_PASSWORD en .env (ver .env.example)}@db:5432/${POSTGRES_DB:-severidad_vial}
+      # Mismo origen vía nginx: sin CORS
+      CORS_ORIGINS: ""
+    volumes:
+      # Modelo fuera de la imagen y de git; si falta, /api/predecir responde 503
+      - ./data/models:/app/data/models:ro
+    networks: [interna]
+    depends_on:
+      db:
+        condition: service_healthy
+    mem_limit: 768m
+    logging: *registros
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # Vacía = la API en el mismo origen (/api, vía el proxy de nginx)
+        VITE_API_URL: ""
+    image: severidad-vial/web:latest
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    networks: [interna, frontal]
+    depends_on:
+      api:
+        condition: service_healthy
+    mem_limit: 64m
+    logging: *registros
+
+networks:
+  # Sin salida a internet: base y API solo hablan entre sí y con nginx
+  interna:
+    internal: true
+  frontal: {}
+
+volumes:
+  pgdata:

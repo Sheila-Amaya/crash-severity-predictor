@@ -1,0 +1,10 @@
+{
+  "modelo": "MLP",
+  "accuracy": 0.6526,
+  "f1_score": 0.6889,
+  "roc_auc": 0.7162,
+  "precision_fallecido": 0.3114,
+  "recall_fallecido": 0.6765,
+  "iteraciones": 27,
+  "loss_final": 0.6052
+}

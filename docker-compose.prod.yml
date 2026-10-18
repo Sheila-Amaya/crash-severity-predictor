@@ -1,0 +1,57 @@
+# Override de SERVIDOR: HTTPS con Caddy delante de nginx.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Requiere DOMINIO en .env (un registro DNS A del dominio apuntando al
+# servidor). Solo Caddy publica puertos (80 y 443); web, api y db quedan sin
+# puertos publicados. Sin este archivo el stack sigue sirviendo en
+# http://localhost:8080 como siempre.
+
+services:
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    environment:
+      DOMINIO: ${DOMINIO:?Defina DOMINIO en .env (ver .env.example)}
+    ports:
+      - "80:80"
+      - "443:443"
+      # HTTP/3 (QUIC)
+      - "443:443/udp"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificados y cuenta ACME: deben persistir (límites de emisión)
+      - caddy_data:/data
+      - caddy_config:/config
+    # Necesita salida a internet para obtener y renovar los certificados
+    networks: [frontal]
+    depends_on:
+      web:
+        condition: service_healthy
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 128m
+    # Misma rotación que el resto de servicios (docker-compose.yml)
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web:
+    # Solo se llega a nginx a través de Caddy
+    ports: !reset []
+    volumes:
+      # Límites por IP con la IP real del cliente (la reenvía Caddy)
+      - ./deploy/nginx/ip-real.conf:/etc/nginx/conf.d/ip-real.conf:ro
+
+  api:
+    environment:
+      # La app llega por el mismo origen; si un navegador llamara a la API
+      # desde otro sitio, solo se aceptaría el dominio propio
+      CORS_ORIGINS: https://${DOMINIO:?Defina DOMINIO en .env (ver .env.example)}
+
+volumes:
+  caddy_data:
+  caddy_config:

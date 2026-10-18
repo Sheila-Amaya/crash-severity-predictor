@@ -157,7 +157,17 @@ ENV/
 env.bak/
 venv.bak/
 
-data/
+data/raw/
+data/models/*.pkl
+
+# Docker: semilla de la base (se copia al servidor con scp) y respaldos
+db/seed/*.dump
+db/seed/*.dump.*
+respaldos/
+
+# Frontend (Node / Vite)
+node_modules/
+dist/
 
 # Spyder project settings
 .spyderproject
