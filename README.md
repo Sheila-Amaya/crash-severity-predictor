@@ -221,7 +221,7 @@ tests/       pruebas de la API (pytest)
 
 ## Fuentes de datos
 
-Datos: INE Guatemala (CC BY), procesados por la autora. Límites: IDEG/SEGEPLAN. Contexto cartográfico: Natural Earth.
+Datos: INE Guatemala (CC BY), procesados y depurados para este proyecto. Límites: IDEG/SEGEPLAN. Contexto cartográfico: Natural Earth.
 
 ## Licencia
 

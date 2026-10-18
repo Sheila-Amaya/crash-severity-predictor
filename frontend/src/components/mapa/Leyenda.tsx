@@ -146,7 +146,7 @@ export function Leyenda({ ancho = 'w-[22rem]' }: { ancho?: string }) {
 
       <p className="mt-1.5 border-t border-borde pt-1.5 text-[10px] leading-snug text-tenue">
         Los cortes se calculan con los datos visibles y cambian con los filtros.
-        {vista === 'burbujas' && ` Resumen por ${unidad}; no es la ubicación exacta de cada hecho.`} Límites: IDEG.
+        {vista === 'burbujas' && ` Resumen por ${unidad}; no es la ubicación exacta de cada hecho.`} Datos: INE (CC BY). Límites: IDEG/SEGEPLAN. Contexto: Natural Earth.
       </p>
     </section>
   )

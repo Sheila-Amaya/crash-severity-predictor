@@ -301,7 +301,7 @@ export function Acerca() {
           <Seccion id="datos" numero="01" etiqueta="Datos" titulo="Microdatos oficiales del INE.">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Tarjeta icono="datos" etiqueta="Fuente">
-                <p className="text-tinta">INE · microdatos de hechos de tránsito, 2018–2024.</p>
+                <p className="text-tinta">INE (CC BY) · microdatos de hechos de tránsito, 2018–2024.</p>
               </Tarjeta>
               <Tarjeta icono="archivos" etiqueta="Archivos independientes">
                 <p className="text-sm leading-relaxed text-tenue">
@@ -311,7 +311,7 @@ export function Acerca() {
               </Tarjeta>
               <Tarjeta icono="mapa" etiqueta="Cartografía">
                 <p className="text-sm leading-relaxed text-tenue">
-                  Límites territoriales: IDEG. Contexto de los países vecinos: Natural Earth (dominio público).
+                  Límites territoriales: IDEG/SEGEPLAN. Contexto de los países vecinos: Natural Earth (dominio público).
                 </p>
               </Tarjeta>
             </div>

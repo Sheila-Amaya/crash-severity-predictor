@@ -2,7 +2,7 @@
 
 Microdatos del INE de hechos de tránsito 2018–2024, en tres archivos
 independientes: hechos, vehículos involucrados y fallecidos y lesionados.
-Cartografía: IDEG (límites departamentales y municipales).
+Datos: INE Guatemala (CC BY), procesados y depurados para este proyecto. Límites: IDEG/SEGEPLAN. Contexto cartográfico: Natural Earth.
 
 | Tabla | Filas |
 |---|---|
