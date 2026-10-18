@@ -2,8 +2,7 @@
 
 Microdatos del INE de hechos de tránsito 2018–2024, en tres archivos
 independientes: hechos, vehículos involucrados y fallecidos y lesionados.
-Cartografía: IDEG (límites departamentales y municipales). Licencias y forma
-de citar: [LICENCIAS_DATOS.md](LICENCIAS_DATOS.md).
+Cartografía: IDEG (límites departamentales y municipales).
 
 | Tabla | Filas |
 |---|---|

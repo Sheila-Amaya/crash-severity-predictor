@@ -36,7 +36,8 @@ desarrollo. Ya no se usa Supabase.
 - **Pendiente:**
   - Programar los respaldos (cron o tarea programada) y copiarlos fuera del
     servidor.
-  - Publicar la semilla como asset de un GitHub Release, con su SHA-256.
+  - Copiar la semilla al servidor con `scp` (contiene los límites de IDEG: no
+    va en una Release pública) y verificarla con su SHA-256.
   - Al eliminar el proyecto de Supabase, cambiar en el `.env` la `DB_URL` de
     desarrollo por la local (ver `.env.example`).
 
@@ -96,9 +97,6 @@ desarrollo. Ya no se usa Supabase.
 
 ## 7. Otros
 
-- **Licencia de IDEG:** los GeoJSON no traen términos de uso. Hay que
-  confirmarlos con IDEG antes de publicar (ver `frontend/README.md`). También
-  conviene confirmar los términos de reutilización de los microdatos del INE.
 - **Resuelto:** las rutas del frontend `/simulador` y `/acerca` funcionan al
   recargarlas directamente (nginx devuelve `index.html`).
 - **Resuelto:** las variables del build. La imagen compila con `VITE_API_URL`

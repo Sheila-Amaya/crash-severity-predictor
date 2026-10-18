@@ -143,8 +143,7 @@ frontend/
 
 - **Límites departamentales y municipales:** IDEG — Infraestructura de Datos
   Espaciales de Guatemala (capas `agrip_03_Limites_departamentales` y
-  `agrip_04_Limites_municipales_340`). Licencia pendiente de confirmar; ver
-  [docs/LICENCIAS_DATOS.md](../docs/LICENCIAS_DATOS.md).
+  `agrip_04_Limites_municipales_340`).
 - La API sirve esas geometrías simplificadas (`/api/mapa/coropletico`).
 - **Contexto geográfico (países, costa y fronteras):** Natural Earth v5.1.2,
   `admin_0_countries` y `admin_0_boundary_lines_land`. Licencia: **dominio

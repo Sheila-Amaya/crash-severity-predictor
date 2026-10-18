@@ -222,9 +222,17 @@ cd crash-severity-predictor
 
 ### 5.2 Modelo y semilla de la base
 
-No están en git. El script los descarga del GitHub Release y verifica cada
-archivo contra `SHA256SUMS` (que sí está en git); si una huella no coincide,
-descarta el archivo y termina con error:
+**El semilla.dump contiene los límites de IDEG: no lo publiques en una Release pública; copia los archivos al servidor con scp.**
+
+Desde su equipo, copie la semilla al servidor:
+
+```bash
+scp db/seed/semilla.dump ADMIN@IP_DEL_SERVIDOR:crash-severity-predictor/db/seed/   # en su equipo
+```
+
+Luego, en el servidor, el script verifica la semilla y descarga el modelo del
+GitHub Release, comparando cada archivo con `SHA256SUMS`; si una huella no
+coincide, descarta el archivo y termina con error:
 
 ```bash
 bash scripts/descargar-artefactos.sh

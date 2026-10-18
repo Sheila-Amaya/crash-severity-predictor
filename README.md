@@ -4,7 +4,9 @@
 > SHAP explains each prediction; the stack runs with Docker (React + MapLibre, nginx, FastAPI, PostgreSQL/PostGIS).
 
 Mapa interactivo y API de estadísticas sobre las víctimas de hechos de tránsito
-en Guatemala entre 2018 y 2024, con datos del INE. Incluye un modelo Random
+en Guatemala entre 2018 y 2024, con datos del INE: 71,942 víctimas (13,741
+fallecidos y 58,201 lesionados) y 52,488 hechos ([notas sobre los
+datos](docs/DATOS.md)). Incluye un modelo Random
 Forest que estima si una víctima resultaría fallecida o lesionada y explica cada
 estimación con SHAP.
 
@@ -55,7 +57,7 @@ Requisitos: Docker con Docker Compose v2.24 o superior.
 ```bash
 git clone https://github.com/Sheila-Amaya/crash-severity-predictor.git && cd crash-severity-predictor
 cp .env.example .env                   # define POSTGRES_PASSWORD y APP_DB_PASSWORD
-bash scripts/descargar-artefactos.sh   # datos de arranque y modelo
+bash scripts/descargar-artefactos.sh   # verifica la semilla y descarga el modelo
 docker compose up -d --build           # app en http://localhost:8080
 ```
 
@@ -199,13 +201,6 @@ así que un árbol aislado no explica el modelo.
 - Las cifras de cada caja corresponden a una muestra de entrenamiento con
   remuestreo, no al total de datos.
 
-## Datos y licencias
-
-- **INE Guatemala** ([datos.ine.gob.gt](https://datos.ine.gob.gt)): hechos y fallecidos y lesionados 2018–2024, con licencia CC BY. Son 71,942 víctimas (13,741 fallecidos, 58,201 lesionados) y 52,488 hechos.
-- **IDEG/SEGEPLAN**: límites departamentales y municipales; licencia pendiente de confirmar.
-- **Natural Earth**: países y fronteras de contexto, de dominio público.
-- Detalle y forma de citar: [docs/LICENCIAS_DATOS.md](docs/LICENCIAS_DATOS.md). Notas sobre los datos: [docs/DATOS.md](docs/DATOS.md).
-
 ## Estructura del repositorio
 
 ```
@@ -213,7 +208,7 @@ core/        API FastAPI: rutas, servicios, esquemas y carga del modelo
 data/        datos limpios, particiones de entrenamiento y prueba, métricas y modelos
 db/          esquema SQL, migraciones, scripts del contenedor y semilla
 deploy/      configuración de Caddy, nginx de servidor y cron de respaldos
-docs/        despliegue, API, datos, licencias, capturas y figuras
+docs/        despliegue, API, datos, capturas y figuras
 frontend/    aplicación web (React, TypeScript, MapLibre, Tailwind)
 notebooks/   EDA, limpieza, modelado y carga a la base
 scripts/     carga de datos, descarga de artefactos, respaldos y verificación
@@ -228,4 +223,6 @@ tests/       pruebas de la API (pytest)
 
 ## Licencia
 
-Código bajo licencia [MIT](LICENSE). Los datos conservan las licencias de sus fuentes ([docs/LICENCIAS_DATOS.md](docs/LICENCIAS_DATOS.md)).
+Datos: INE Guatemala (CC BY), procesados por la autora. Límites: IDEG/SEGEPLAN. Contexto cartográfico: Natural Earth.
+
+Código bajo licencia [MIT](LICENSE).
