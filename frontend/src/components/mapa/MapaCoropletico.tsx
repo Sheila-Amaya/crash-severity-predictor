@@ -26,7 +26,7 @@ import { usePaleta, type Paleta } from '../../theme/tema'
 import type { PropiedadesMapa } from '../../utils/clasificacion'
 import { etiquetasVisibles, margenesLibres, type Lado } from '../../utils/espacio'
 import { formatoEntero, formatoNulo, formatoPorcentaje } from '../../utils/formato'
-import { cajaEnvolvente, centroide, radioBurbuja, radioMaximo } from '../../utils/geometria'
+import { RADIO_MINIMO_BURBUJA, cajaEnvolvente, centroide, radioBurbuja, radioMaximo } from '../../utils/geometria'
 import { ErrorCarga } from '../ui/Estados'
 import { useClasificacionMapa } from './useClasificacionMapa'
 // Contexto: Natural Earth (dominio público), recortado con scripts/contexto_natural_earth.py.
@@ -41,7 +41,19 @@ type Caja4 = [number, number, number, number]
 const GUATEMALA: Caja4 = [-92.25, 13.72, -88.2, 17.82]
 const PITCH_3D = 50
 const RADIO_CIFRA = 15 // radio mínimo (px) para escribir la cifra dentro
+const TAMANO_CIFRA = 9.5 // px; igual que .cifra-burbuja en index.css
+const BORDE_FRENTE = 1.25 // px, contorno de la burbuja bajo el cursor
 const SEPARACION_ETIQUETA = 8
+
+/**
+ * La cifra solo se escribe si cabe entera dentro de la burbuja, sin tocar el
+ * contorno de hover (JetBrains Mono: cada carácter mide 0.6 em).
+ */
+function cabeCifra(texto: string, radio: number): boolean {
+  const mitadAncho = (texto.length * 0.6 * TAMANO_CIFRA) / 2
+  const mitadAlto = TAMANO_CIFRA * 0.6
+  return radio >= RADIO_CIFRA && Math.hypot(mitadAncho, mitadAlto) <= radio - BORDE_FRENTE - 0.5
+}
 
 const CAPAS_INTERACTIVAS: Record<Vista, string[]> = {
   burbujas: ['burbujas', 'areas-relleno'],
@@ -248,7 +260,7 @@ export function MapaCoropletico() {
             properties: {
               ...f.properties,
               // Raíz cuadrada con tope (radioMax): la mayor no tapa a sus vecinas
-              radio: radioBurbuja(f.properties.total, maxTotal, 4, radioMax),
+              radio: radioBurbuja(f.properties.total, maxTotal, RADIO_MINIMO_BURBUJA, radioMax),
               // Halo más intenso en los dos grupos más altos (quintiles 4 y 5)
               intenso: k >= 2 && f.properties.clase >= k - 1,
             },
@@ -480,16 +492,30 @@ export function MapaCoropletico() {
         layout: { 'circle-sort-key': ordenRadio },
         paint: { 'circle-color': ['get', 'color'], 'circle-blur': 0.8 },
       })
+      // Opacidad 1: el color de la letalidad no se mezcla con lo que hay debajo
+      const pinturaBurbuja = {
+        'circle-radius': ['case', sinVictimas, 2.5, ['get', 'radio']] as ExpressionSpecification,
+        'circle-color': ['case', sinVictimas, paleta.mapNullDot, ['get', 'color']] as ExpressionSpecification,
+        'circle-opacity': 1,
+      }
       mapa.addLayer({
         id: 'burbujas',
         type: 'circle',
         source: 'burbujas',
         layout: { 'circle-sort-key': ordenRadio },
+        paint: { ...pinturaBurbuja, 'circle-stroke-color': paleta.mapBubbleStroke },
+      })
+      // La burbuja bajo el cursor se vuelve a dibujar encima de todas, aunque sea
+      // pequeña o quede debajo de otra, con un contorno fino
+      mapa.addLayer({
+        id: 'burbujas-frente',
+        type: 'circle',
+        source: 'burbujas',
+        filter: ['==', ['get', 'codigo'], -1],
         paint: {
-          'circle-radius': ['case', sinVictimas, 2.5, ['get', 'radio']],
-          'circle-color': ['case', sinVictimas, paleta.mapNullDot, ['get', 'color']],
-          'circle-opacity': 0.92,
-          'circle-stroke-color': ['case', HOVER, paleta.mapHover, paleta.mapBubbleStroke],
+          ...pinturaBurbuja,
+          'circle-stroke-color': paleta.mapHover,
+          'circle-stroke-width': BORDE_FRENTE,
         },
       })
 
@@ -501,6 +527,7 @@ export function MapaCoropletico() {
           if (hoverId !== null) mapa.setFeatureState({ source, id: hoverId }, { hover: false })
           if (id !== null) mapa.setFeatureState({ source, id }, { hover: true })
         }
+        mapa.setFilter('burbujas-frente', ['==', ['get', 'codigo'], id ?? -1])
         hoverId = id
       }
 
@@ -633,6 +660,7 @@ export function MapaCoropletico() {
     const visible = (capa: string, si: boolean) => mapa.setLayoutProperty(capa, 'visibility', si ? 'visible' : 'none')
 
     visible('burbujas', vista === 'burbujas')
+    visible('burbujas-frente', vista === 'burbujas')
     visible('areas-relleno', vista !== '3d')
     visible('areas-sin-victimas', vista === 'areas')
     visible('areas-3d', vista === '3d')
@@ -665,24 +693,21 @@ export function MapaCoropletico() {
     const intenso: ExpressionSpecification = ['==', ['get', 'intenso'], true]
 
     mapa.setLayoutProperty('burbujas-halo', 'visibility', activo ? 'visible' : 'none')
-    // En móvil el halo se reduce (menos píxeles difuminados que dibujar)
+    // Halo sutil: apenas sobresale de la burbuja y no tiñe a las vecinas; en
+    // móvil, aún más corto (menos píxeles difuminados que dibujar)
     mapa.setPaintProperty('burbujas-halo', 'circle-radius', [
       '*',
       ['get', 'radio'],
-      ['case', intenso, movil ? 1.6 : 2.2, movil ? 1.3 : 1.8],
+      ['case', intenso, movil ? 1.3 : 1.5, movil ? 1.15 : 1.3],
     ])
-    mapa.setPaintProperty('burbujas-halo', 'circle-opacity', claro ? ['case', intenso, 0.22, 0.1] : ['case', intenso, 0.42, movil ? 0.12 : 0.25])
+    mapa.setPaintProperty('burbujas-halo', 'circle-opacity', claro ? ['case', intenso, 0.12, 0.06] : ['case', intenso, 0.22, 0.12])
 
-    mapa.setPaintProperty('burbujas', 'circle-blur', activo && !claro ? 0.3 : 0)
-    mapa.setPaintProperty('burbujas', 'circle-stroke-width', [
-      'case',
-      HOVER,
-      2,
-      ['==', ['get', 'clase'], 0],
-      0,
-      activo && !claro ? 0.5 : 0.8,
-    ])
-    mapa.setPaintProperty('burbujas', 'circle-stroke-opacity', ['case', HOVER, 1, activo && !claro ? 0.35 : 0.9])
+    // Bordes nítidos (sin difuminar la burbuja) y un contorno fino y
+    // semitransparente que separa las burbujas que se tocan; en tema claro un
+    // poco más opaco, porque las clases claras se apoyan en él
+    mapa.setPaintProperty('burbujas', 'circle-blur', 0)
+    mapa.setPaintProperty('burbujas', 'circle-stroke-width', ['case', ['==', ['get', 'clase'], 0], 0, 0.75])
+    mapa.setPaintProperty('burbujas', 'circle-stroke-opacity', claro ? 0.85 : 0.6)
   }, [listo, vista, brillo, paleta])
 
   // -- Encuadre automático (filtros, "volver", enlaces compartidos) --------
@@ -757,14 +782,16 @@ export function MapaCoropletico() {
       etiquetas.current.push({ marcador, elemento: el, lngLat, burbuja: -1, radio: -SEPARACION_ETIQUETA })
     }
 
-    // Cifras nítidas dentro de las burbujas grandes (HTML, sin difuminado)
+    // Cifras nítidas dentro de las burbujas grandes (HTML, sin difuminado),
+    // solo si caben enteras: así el contorno de hover nunca las corta
     if (vista === 'burbujas' && capas) {
       for (const f of capas.burbujas.features) {
         const p = f.properties as PropiedadesMapa & { radio: number }
-        if (p.clase === 0 || p.radio < RADIO_CIFRA) continue
+        const texto = formatoEntero(p.total)
+        if (p.clase === 0 || !cabeCifra(texto, p.radio)) continue
         const el = document.createElement('span')
         el.className = 'cifra-burbuja'
-        el.textContent = formatoEntero(p.total)
+        el.textContent = texto
         el.style.color = p.clase <= 2 ? paleta.mapCifraBaja : paleta.mapCifraAlta
         nuevo(f.geometry.coordinates as [number, number], el)
       }

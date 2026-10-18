@@ -2,7 +2,7 @@ import { useMapaUi } from '../../state/mapaUi'
 import { usePaleta } from '../../theme/tema'
 import type { Metrica } from '../../utils/clasificacion'
 import { formatoEntero, formatoPorcentaje } from '../../utils/formato'
-import { radioBurbuja, radioMaximo } from '../../utils/geometria'
+import { RADIO_MINIMO_BURBUJA, radioBurbuja, radioMaximo } from '../../utils/geometria'
 import { Segmentado } from '../ui/Segmentado'
 import { useClasificacionMapa } from './useClasificacionMapa'
 
@@ -86,7 +86,8 @@ export function Leyenda({ ancho = 'w-[22rem]' }: { ancho?: string }) {
         {vista === 'burbujas' && muestras.length > 0 && (
           <div className="flex items-end gap-2" role="img" aria-label={`Tamaño: víctimas (${muestras.map(formatoEntero).join(' y ')})`}>
             {muestras.map((valor) => {
-              const r = radioBurbuja(valor, maxTotal, 5, radioMax) * 0.55
+              // Mismo radio que en el mapa (radioBurbuja con los mismos parámetros)
+              const r = radioBurbuja(valor, maxTotal, RADIO_MINIMO_BURBUJA, radioMax)
               return (
                 <span key={valor} className="flex flex-col items-center">
                   <svg width={r * 2 + 2} height={r * 2 + 2} aria-hidden="true">

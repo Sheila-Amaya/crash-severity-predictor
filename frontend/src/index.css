@@ -198,7 +198,7 @@
   .cifra-burbuja {
     pointer-events: none;
     font-family: var(--font-mono);
-    font-size: 10.5px;
+    font-size: 9.5px; /* TAMANO_CIFRA en MapaCoropletico.tsx */
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
