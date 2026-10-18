@@ -4,11 +4,10 @@
 > SHAP explains each prediction; the stack runs with Docker (React + MapLibre, nginx, FastAPI, PostgreSQL/PostGIS).
 
 Mapa interactivo y API de estadísticas sobre las víctimas de hechos de tránsito
-en Guatemala entre 2018 y 2024, con datos del INE: 71,942 víctimas (13,741
-fallecidos y 58,201 lesionados) y 52,488 hechos ([notas sobre los
-datos](docs/DATOS.md)). Incluye un modelo Random
-Forest que estima si una víctima resultaría fallecida o lesionada y explica cada
-estimación con SHAP.
+en Guatemala entre 2018 y 2024: 71,942 víctimas (13,741 fallecidos y 58,201
+lesionados) en 52,488 hechos, con datos del INE ([notas sobre los
+datos](docs/DATOS.md)). Un modelo Random Forest estima si una víctima
+resultaría fallecida o lesionada y explica cada estimación con SHAP.
 
 <!-- Demo: pendiente -->
 
@@ -57,13 +56,12 @@ Requisitos: Docker con Docker Compose v2.24 o superior.
 ```bash
 git clone https://github.com/Sheila-Amaya/crash-severity-predictor.git && cd crash-severity-predictor
 cp .env.example .env                   # define POSTGRES_PASSWORD y APP_DB_PASSWORD
-bash scripts/descargar-artefactos.sh   # verifica la semilla y descarga el modelo
+bash scripts/descargar-artefactos.sh   # verifica modelo y semilla (db/seed/LEEME.md)
 docker compose up -d --build           # app en http://localhost:8080
 ```
 
-Para publicarlo en un servidor con dominio y HTTPS, ver
-[docs/DESPLIEGUE.md](docs/DESPLIEGUE.md); sobre los datos de arranque, ver
-[db/seed/LEEME.md](db/seed/LEEME.md).
+Modelo y semilla de la base: [db/seed/LEEME.md](db/seed/LEEME.md). Para
+publicar en un servidor con dominio y HTTPS: [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
 
 ## Desarrollo local
 
@@ -221,8 +219,10 @@ tests/       pruebas de la API (pytest)
 - Con una precisión de fallecidos de 0.3382, solo 1 de cada 3 alertas «Fallecido» es real: es apoyo a la decisión y no sustituye el criterio de las autoridades.
 - Usa datos agregados y anonimizados del INE, sin ubicaciones exactas ni datos personales.
 
-## Licencia
+## Fuentes de datos
 
 Datos: INE Guatemala (CC BY), procesados por la autora. Límites: IDEG/SEGEPLAN. Contexto cartográfico: Natural Earth.
+
+## Licencia
 
 Código bajo licencia [MIT](LICENSE).
