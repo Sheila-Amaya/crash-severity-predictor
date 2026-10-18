@@ -9,7 +9,7 @@ repositorio, y sirven para verificarlos.
 | `db/seed/semilla.dump` | `pg_dump` (formato personalizado) del esquema `public` de la base PostgreSQL/PostGIS, unos 5 MB | El contenedor `db`, en su primer arranque con el volumen vacío (`db/docker/20_semilla.sh`) |
 | `data/models/random_forest.pkl` | Modelo Random Forest entrenado (scikit-learn 1.8.0), unos 44 MB | La API, montado como volumen de solo lectura |
 
-**El semilla.dump contiene los límites de IDEG: no lo publiques en una Release pública; copia los archivos al servidor con scp.**
+La semilla incluye los límites departamentales y municipales de IDEG/SEGEPLAN. Por eso se transfiere directamente al servidor con `scp` y no se distribuye como archivo de una Release.
 
 ## Obtener y verificar
 

@@ -250,7 +250,7 @@ cd crash-severity-predictor
 
 ### 5.2 Modelo y semilla de la base
 
-**El semilla.dump contiene los límites de IDEG: no lo publiques en una Release pública; copia los archivos al servidor con scp.**
+La semilla incluye los límites departamentales y municipales de IDEG/SEGEPLAN. Por eso se transfiere directamente al servidor con `scp` y no se distribuye como archivo de una Release.
 
 ```bash
 scp db/seed/semilla.dump ADMIN@IP_DEL_SERVIDOR:crash-severity-predictor/db/seed/   # en tu equipo
