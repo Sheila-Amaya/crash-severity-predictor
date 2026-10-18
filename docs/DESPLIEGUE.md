@@ -33,6 +33,7 @@ Contenido:
 9. [Actualizar y volver atrás](#9-actualizar-y-volver-atrás)
 10. [Problemas frecuentes](#10-problemas-frecuentes)
 11. [Referencia del stack de Docker](#11-referencia-del-stack-de-docker)
+12. [Servidor ARM (Oracle Cloud Always Free)](#12-servidor-arm-oracle-cloud-always-free)
 
 ---
 
@@ -598,3 +599,105 @@ manuales en PowerShell (un archivo en `respaldos/`, sin retención; en
 - **Errores raros (`$'\r'`) al correr los `.sh` en Linux**: el archivo tiene
   saltos de línea de Windows. `.gitattributes` los fija en LF; vuelve a
   obtenerlos con `git checkout -- scripts db`.
+
+---
+
+## 12. Servidor ARM (Oracle Cloud Always Free)
+
+El mismo stack corre en servidores ARM (`linux/arm64`), por ejemplo en las
+instancias Ampere A1 de Oracle Cloud. La única diferencia es el override
+`docker-compose.arm64.yml`, que usa una imagen de PostGIS publicada para
+arm64 (la oficial solo existe para amd64) y da más margen al healthcheck de
+la API. `docker-compose.yml` y `docker-compose.prod.yml` no cambian, y el
+modelo y la semilla son los mismos en ambas arquitecturas.
+
+> Los límites del plan gratuito de Oracle (núcleos, memoria, disco y
+> tráfico) pueden cambiar: confírmalos en su sitio antes de crear la
+> instancia.
+
+### 12.1 Crear la instancia
+
+En la consola de Oracle Cloud, crea una instancia de cómputo con:
+
+- la forma **Ampere A1** (arquitectura ARM);
+- una imagen de **Ubuntu 22.04 o 24.04 para aarch64**;
+- al menos 2 GB de RAM, como en el resto de esta guía;
+- una IP pública y tu clave pública SSH (la consola permite añadirla al
+  crear la instancia).
+
+Los pasos exactos de la consola están en la documentación oficial de Oracle
+Cloud Infrastructure (docs.oracle.com, secciones de Compute y de
+Networking). El usuario inicial de la imagen de Ubuntu figura en esa misma
+documentación; úsalo en lugar de `root` en la [sección 1](#1-usuario-y-acceso-ssh).
+
+### 12.2 Abrir los puertos 80 y 443
+
+Hay dos capas y las dos deben permitir el tráfico:
+
+1. **Red de Oracle:** en la red virtual (VCN) de la instancia, agrega reglas
+   de entrada para TCP 80 y 443 (y UDP 443 si quieres HTTP/3) desde
+   cualquier origen, en la lista de seguridad de la subred o en un grupo de
+   seguridad de red. El puerto 22 suele venir abierto.
+2. **Cortafuegos de la instancia:** las imágenes de Ubuntu de Oracle suelen
+   traer reglas propias de `iptables` que rechazan todo salvo SSH. Revísalas
+   antes de seguir:
+
+   ```bash
+   sudo iptables -L INPUT -n --line-numbers
+   ```
+
+   Si aparece una regla `REJECT` al final, abre los puertos por delante de
+   ella y guarda las reglas para que sobrevivan a un reinicio (en lugar de
+   `ufw` de la [sección 2.1](#21-cortafuegos-solo-22-80-y-443), para no
+   mezclar dos sistemas de reglas):
+
+   ```bash
+   sudo iptables -I INPUT -p tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
+   sudo iptables -I INPUT -p tcp --dport 443 -m conntrack --ctstate NEW -j ACCEPT
+   sudo iptables -I INPUT -p udp --dport 443 -j ACCEPT
+   sudo netfilter-persistent save
+   ```
+
+   Si la imagen no trae esas reglas, usa `ufw` como en la sección 2.1.
+
+Después del primer arranque (12.4), comprueba desde otra red que el sitio
+responde, también tras un `sudo reboot`.
+
+### 12.3 Sistema y Docker
+
+Sigue las secciones [1](#1-usuario-y-acceso-ssh) (salvo la parte de `ufw`),
+[2.2](#22-parches-de-seguridad-automáticos), [2.3](#23-zona-horaria-la-hora-de-los-respaldos),
+[3](#3-memoria-de-intercambio-swap) si la instancia tiene 2 GB de RAM o menos, y
+[4](#4-docker). Los comandos de instalación de Docker sirven tal cual en
+aarch64 (`dpkg --print-architecture` devuelve `arm64`).
+
+### 12.4 Código, semilla, modelo, `.env` y arranque
+
+Sigue la [sección 5](#5-código-modelo-semilla-y-env): clonar, copiar la
+semilla con `scp`, `bash scripts/descargar-artefactos.sh` y crear el `.env`.
+La única diferencia es `COMPOSE_FILE`, que suma el override de ARM:
+
+```bash
+sed -i 's|^COMPOSE_FILE=.*|COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml:docker-compose.arm64.yml|' .env
+grep -E '^(DOMINIO|COMPOSE_FILE)=' .env
+docker compose config --services                 # caddy, web, api y db
+docker compose config | grep 'imresamu/postgis'   # el override está activo
+```
+
+Luego, igual que en las secciones [6](#6-dns), [7](#7-arranque-y-verificación-de-https)
+y [8](#8-respaldos-automáticos): registro DNS, `docker compose up -d --build`
+(las imágenes de la API y la web se construyen en la propia instancia, de
+forma nativa), verificación y respaldos. Para confirmar la arquitectura:
+
+```bash
+docker compose exec api uname -m           # aarch64
+bash scripts/docker/verificar_despliegue.sh https://severidad.ejemplo.org
+```
+
+Los scripts de `scripts/docker/` llaman a `docker compose` desde la raíz del
+repositorio, así que respetan el `COMPOSE_FILE` del `.env` sin cambios,
+incluido el cron de respaldos.
+
+Para mover una instalación existente de x86 a ARM, crea un respaldo en el
+servidor anterior (sección 8) y restáuralo en el nuevo con `restaurar.sh`:
+el formato de `pg_dump` no depende de la arquitectura.

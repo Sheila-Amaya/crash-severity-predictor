@@ -62,6 +62,7 @@ docker compose up -d --build           # app en http://localhost:8080
 
 Modelo y semilla de la base: [db/seed/LEEME.md](db/seed/LEEME.md). Para
 publicar en un servidor con dominio y HTTPS: [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
+En servidores ARM (por ejemplo, Oracle Cloud Always Free) se suma `docker-compose.arm64.yml`: [Servidor ARM](docs/DESPLIEGUE.md#12-servidor-arm-oracle-cloud-always-free).
 
 ## Desarrollo local
 
