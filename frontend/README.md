@@ -1,197 +1,96 @@
-# Frontend — Severidad vial Guatemala
+# Frontend
 
-Aplicación web del proyecto: un **mapa de víctimas de hechos de tránsito** de
-Guatemala (INE 2018–2024) por departamento y municipio, con filtros, series y
-ranking; un **simulador** que estima si una víctima resultaría fallecida o
-lesionada y explica la estimación con SHAP; y una página **Acerca de** con los
-datos, el modelo y su uso responsable.
+Aplicación web del proyecto (React, TypeScript, MapLibre y Tailwind): el mapa
+de víctimas con filtros, ranking y evolución, el simulador de severidad y la
+página Acerca de. Consume la API de este repositorio; la descripción general
+está en el [README de la raíz](../README.md).
 
-Consume la API FastAPI de este repositorio (ver el [README de la raíz](../README.md)).
+## Cómo correrlo
 
-| Mapa | Simulador |
-|---|---|
-| ![Mapa de víctimas por departamento, tema oscuro](../docs/capturas/mapa.webp) | ![Simulador con un resultado y sus factores SHAP](../docs/capturas/simulador.webp) |
-
-## Requisitos
-
-- **Node.js 20, 22 o 24+** (`engines` en `package.json`; Vitest 4 y React
-  Router 7 no admiten Node 18). Probado con Node 20.18.1 y npm 10.8.2.
-- La API en marcha (por defecto en `http://localhost:8000`).
-
-## Instalación
+Requisitos: Node.js 20, 22 o 24+ y la API en marcha (por defecto en
+`http://localhost:8000`). El entorno completo se levanta con `.\dev.ps1` desde
+la raíz ([Desarrollo local](../README.md#desarrollo-local)). Solo el frontend:
 
 ```bash
 cd frontend
 npm install
 cp .env.example .env      # Windows: copy .env.example .env
+npm run dev               # http://localhost:5173
 ```
 
-## Variables de entorno
-
-| Variable | Por defecto | Uso |
-|---|---|---|
-| `VITE_API_URL` | `http://localhost:8000` | **Desarrollo:** destino del proxy de `/api`. **Producción:** URL pública de la API, fijada al compilar (sin barra final; si se pone, se quita). Vacía en producción = la API está en el mismo dominio que el frontend. |
-
-Las variables `VITE_*` quedan incrustadas en el JavaScript que recibe el
-navegador: **nunca pongas secretos en ellas**. El frontend no necesita
-credenciales; la conexión a la base vive solo en la API.
-
-## Cómo levantarlo
-
-El entorno completo (base, API y frontend) se levanta con `.\dev.ps1` desde la
-raíz; ver [Desarrollo local](../README.md#desarrollo-local) en el README de la
-raíz. Solo el frontend, con la API ya en marcha:
-
-```bash
-npm run dev           # http://localhost:5173
-```
-
-En desarrollo el navegador llama a `/api/...` en el mismo origen y Vite lo
-reenvía a `VITE_API_URL`: no hace falta configurar CORS.
-
-### Compilación para producción
-
-```bash
-VITE_API_URL=https://api.ejemplo.org npm run build   # PowerShell: $env:VITE_API_URL='https://api.ejemplo.org'; npm run build
-npm run preview                                      # sirve dist/ en http://localhost:4173
-```
-
-Con Docker no hace falta nada de esto a mano: `frontend/Dockerfile` compila
-con `VITE_API_URL` vacía y nginx (`frontend/nginx.conf`) sirve la SPA y hace
-de proxy de `/api` (ver [docs/DESPLIEGUE.md](../docs/DESPLIEGUE.md)).
-
-`dist/` es un sitio estático. Al publicarlo:
-
-- La API debe permitir el origen del frontend en `CORS_ORIGINS` (o servirse en
-  el mismo dominio, con `VITE_API_URL` vacía).
-- El servidor estático debe devolver `index.html` para rutas desconocidas
-  (`/simulador`, `/acerca`): la aplicación usa rutas del navegador.
-- Un `.env` local con `VITE_API_URL=http://localhost:8000` también afecta a
-  `npm run build`; para producción usa la variable de entorno o un
-  `.env.production`.
-
-## Scripts
+En desarrollo, el navegador llama a `/api/...` en el mismo origen y Vite lo
+reenvía a `VITE_API_URL`, así que no hace falta CORS.
 
 | Script | Qué hace |
 |---|---|
-| `npm run dev` | Servidor de desarrollo con recarga en caliente (puerto 5173) y proxy a la API. |
+| `npm run dev` | Servidor de desarrollo con recarga en caliente y proxy a la API. |
 | `npm run build` | Comprueba tipos (`tsc -b`) y compila a `dist/`. |
 | `npm run preview` | Sirve el build de `dist/` (puerto 4173). |
-| `npm run lint` | ESLint (TypeScript, reglas de hooks de React). |
-| `npm test` | Pruebas con Vitest y Testing Library (jsdom). |
-| `npm run contraste` | Verifica el contraste WCAG AA de la paleta en ambos temas; sale con código 1 si algo no cumple. |
+| `npm run lint` | ESLint (TypeScript y reglas de hooks de React). |
+| `npm test` | Pruebas con Vitest y Testing Library. |
+| `npm run contraste` | Verifica el contraste WCAG AA de la paleta en ambos temas. |
+
+## Variables
+
+| Variable | Por defecto | Uso |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:8000` | En desarrollo, destino del proxy de `/api`. Al compilar, URL pública de la API; vacía si la API está en el mismo dominio. |
+
+Las variables `VITE_*` quedan incrustadas en el JavaScript que recibe el
+navegador: no pongas secretos en ellas. El frontend no necesita credenciales.
+
+Con Docker, `frontend/Dockerfile` compila con `VITE_API_URL` vacía y nginx
+(`frontend/nginx.conf`) sirve la SPA y hace de proxy de `/api`
+([docs/DESPLIEGUE.md](../docs/DESPLIEGUE.md)). Si publicas `dist/` en otro
+servidor estático, la API debe permitir ese origen en `CORS_ORIGINS` y el
+servidor debe devolver `index.html` para rutas como `/simulador` y `/acerca`.
 
 ## Estructura
 
 ```
 frontend/
-├── index.html              # título, descripción, favicon y tema inicial (sin destello)
-├── vite.config.ts          # proxy de /api, chunks y favicon.svg generado
-├── scripts/
-│   ├── contraste.mjs        # npm run contraste
-│   └── contexto_natural_earth.py  # genera src/data/contexto-*.json
+├── index.html              # título, descripción, favicon y tema inicial
+├── vite.config.ts          # proxy de /api, chunks y favicon generado
+├── nginx.conf, Dockerfile  # imagen de producción
+├── scripts/                # contraste.mjs y contexto_natural_earth.py
 └── src/
-    ├── main.tsx             # React Query, router, fuentes y tema
-    ├── App.tsx              # rutas (cada página se carga bajo demanda)
-    ├── proyecto.ts          # URL del repositorio: icono del encabezado y pie de "Acerca de"
-    ├── api/                 # cliente fetch, tipos y hooks de React Query
-    ├── components/
-    │   ├── Layout.tsx       # barra superior, interruptor de tema
-    │   ├── mapa/            # mapa MapLibre, fichas de filtros, KPIs, leyenda, panel de datos
-    │   ├── dashboard/       # serie temporal y ranking (Recharts)
-    │   ├── simulador/       # formulario, resultado con SHAP y ayuda
-    │   └── ui/              # piezas editoriales, estados de carga/error, hojas inferiores
-    ├── pages/               # Panel (mapa), Simulador, Acerca
-    ├── state/               # filtros (Zustand) sincronizados con la URL
-    ├── hooks/               # media queries, movimiento reducido, título de página
-    ├── theme/               # palette.json (oscuro y claro), tema.ts y logo.ts
-    ├── utils/               # clasificación, geometría, espacio libre, formato, simulador
-    └── data/                # contexto geográfico de Natural Earth
+    ├── api/                # cliente fetch, tipos y hooks de React Query
+    ├── components/         # mapa, dashboard, simulador, acerca y piezas de interfaz
+    ├── pages/              # Panel (mapa), Simulador y Acerca
+    ├── state/              # filtros (Zustand) sincronizados con la URL
+    ├── hooks/              # media queries, movimiento reducido, título de página
+    ├── theme/              # palette.json (temas oscuro y claro), tema.ts y logo.ts
+    ├── utils/              # clasificación, geometría, formato y simulador
+    └── data/               # contexto geográfico de Natural Earth
 ```
 
-## Decisiones de diseño
+## Diseño
 
-- **Paleta única** en `src/theme/palette.json`. `tema.ts` la vuelca a
-  variables CSS (`--c-*`) que comparten Tailwind, Recharts y MapLibre; ningún
-  componente define colores propios. `npm run contraste` verifica texto (4.5:1),
-  elementos gráficos (3:1), las cifras dentro de las burbujas y que la escala
-  del mapa sea monótona en luminancia (se lee en escala de grises).
-- **Temas:** el **oscuro** es el principal. El **claro** es opcional: se activa
-  con el interruptor de la barra superior, la elección se recuerda en el
-  navegador y, si no hay elección previa, se sigue `prefers-color-scheme`.
-  Al cambiar de tema el mapa se vuelve a dibujar con los colores del tema.
-- **Logotipo:** un punto con dos anillos concéntricos que recuerdan las
-  burbujas del mapa (`components/ui/Logotipo.tsx`), en el color de acento del
-  tema activo; el anillo exterior late despacio salvo con
-  `prefers-reduced-motion`. Su geometría vive en `theme/logo.ts`, y de ahí y de
-  `palette.json` se genera `favicon.svg` al compilar (y en `npm run dev`), con
-  variante para `prefers-color-scheme: light`.
-- **Tipografías** autoalojadas (sin peticiones a terceros): **Inter** para el
-  texto y **JetBrains Mono** para etiquetas técnicas y cifras tabulares.
-- **Mapa:** fondo liso sin teselas externas; burbujas en el centroide de cada
-  área (resumen territorial, no ubicación exacta), vista de áreas y 3D. Los
-  colores son quintiles de los datos visibles.
-- **Enlaces externos:** el único es el repositorio en GitHub (icono del
-  encabezado y pie de "Acerca de"), en una pestaña nueva con
-  `rel="noopener noreferrer"`. Sale de `REPOSITORIO` en `src/proyecto.ts`.
-- **Accesibilidad:** foco visible, navegación por teclado (el ranking permite
-  recorrer el mapa sin ratón), regiones `aria-live`, `prefers-reduced-motion`.
-- **Carga:** cada página es un chunk aparte; MapLibre (≈1 MB) y Recharts solo
-  se descargan en la página del mapa.
-
-## Datos cartográficos
-
-- **Límites departamentales y municipales:** IDEG — Infraestructura de Datos
-  Espaciales de Guatemala (capas `agrip_03_Limites_departamentales` y
-  `agrip_04_Limites_municipales_340`).
-- La API sirve esas geometrías simplificadas (`/api/mapa/coropletico`).
-- **Contexto geográfico (países, costa y fronteras):** Natural Earth v5.1.2,
-  `admin_0_countries` y `admin_0_boundary_lines_land`. Licencia: **dominio
-  público** ("All versions of Natural Earth raster + vector map data found on
-  this website are in the public domain",
-  https://www.naturalearthdata.com/about/terms-of-use/). Made with Natural Earth.
-  - **1:50m** de Centroamérica, sur de México y Caribe cercano (lon −100…−76,
-    lat 5…24) en `src/data/contexto-region.json` (~34 KB, en el chunk del mapa).
-  - **1:10m** de México, Belice, Honduras, El Salvador y la silueta de
-    Guatemala alrededor del país (lon −95…−86, lat 12.5…19.5) en
-    `src/data/contexto-detalle.json` (~60 KB). Se carga en diferido como chunk
-    aparte al acercar (zoom ≥ 7.5) y sustituye al 1:50m de esa zona.
-  - Ambos se generan con `scripts/contexto_natural_earth.py` (instrucciones en
-    el propio script). Ninguna descarga en tiempo de ejecución.
-  - Coherencia con IDEG: la silueta de Guatemala de Natural Earth es la tierra
-    de base bajo los límites de IDEG (sin huecos donde no coinciden), y los
-    tramos de frontera de Natural Earth junto a Guatemala no se dibujan: ahí
-    manda el límite de IDEG.
-  - El mapa no se puede alejar ni desplazar fuera de esa región (`maxBounds`,
-    `minZoom`).
-- La retícula de latitud/longitud se genera en el propio código.
-- **Sin mapa base externo:** el mapa usa un fondo liso y no descarga teselas ni
-  requiere claves, por lo que funciona sin internet.
-- Las burbujas se ubican en el centroide de cada polígono: son un **resumen por
-  departamento o municipio**, no la ubicación exacta de cada hecho (los datos
-  del INE no traen coordenadas).
+- **Paleta única** en `src/theme/palette.json`, compartida por Tailwind,
+  Recharts y MapLibre. `npm run contraste` verifica texto, elementos gráficos y
+  que la escala del mapa se lea en escala de grises.
+- **Temas:** oscuro por defecto y claro opcional; la elección se recuerda en el
+  navegador y, sin elección previa, se sigue `prefers-color-scheme`.
+- **Mapa sin servicios externos:** fondo liso, sin teselas ni claves. Los
+  límites de departamentos y municipios (IDEG/SEGEPLAN) llegan desde la API; el
+  contexto de países y fronteras (Natural Earth 1:50m y 1:10m) va en
+  `src/data/` y se genera con `scripts/contexto_natural_earth.py`.
+- **Burbujas en el centroide** de cada área: resumen territorial, no ubicación
+  exacta de cada hecho (los datos no traen coordenadas).
+- **Accesibilidad:** foco visible, navegación por teclado, regiones `aria-live`
+  y `prefers-reduced-motion`.
+- **Carga:** cada página es un chunk aparte; MapLibre y Recharts solo se
+  descargan en la página del mapa. Fuentes autoalojadas (Inter y JetBrains
+  Mono).
 
 ## Problemas frecuentes
 
-**La API está apagada (`ECONNREFUSED`).** La terminal de `npm run dev` muestra
-`http proxy error: /api/... Error: connect ECONNREFUSED 127.0.0.1:8000` y los
-paneles muestran "No se pudo cargar…" con un botón **Reintentar**. Levanta la
-API (`uvicorn core.app:app --reload` o `.\dev.ps1`) y pulsa Reintentar. Si la
-API usa otro puerto, ajusta `VITE_API_URL` en `.env` y reinicia `npm run dev`.
-
-**Error de CORS** ("blocked by CORS policy" en la consola del navegador). No
-ocurre en desarrollo, porque el proxy evita peticiones a otro origen; aparece
-con un build que llama a la API en otra URL. Agrega el origen exacto del
-frontend (esquema, dominio y puerto, sin barra final; p. ej.
-`http://localhost:4173`) a `CORS_ORIGINS` en el `.env` de la API, separado por
-comas, y reinicia la API. `*` se ignora a propósito.
-
-**La base de Docker no está levantada.** La API arranca, pero las consultas
-fallan (500) y su log muestra un error de conexión a `127.0.0.1:5433`. Abre
-Docker Desktop y ejecuta `.\dev.ps1` (o `.\dev.ps1 -SoloBase`); luego pulsa
-Reintentar.
-
-**El simulador dice "El modelo no está disponible".** Falta
-`data/models/random_forest.pkl` y la API responde 503 en `/api/predecir`.
-Obtenlo con `bash scripts/descargar-artefactos.sh` (ver
-[db/seed/LEEME.md](../db/seed/LEEME.md)) y reinicia la API.
+- **`ECONNREFUSED` en la terminal de `npm run dev`** y paneles con "No se pudo
+  cargar…": la API está apagada. Levántala y pulsa **Reintentar**. Si usa otro
+  puerto, ajusta `VITE_API_URL` y reinicia `npm run dev`.
+- **"blocked by CORS policy"** con un build que llama a la API en otra URL:
+  agrega el origen exacto del frontend (por ejemplo `http://localhost:4173`) a
+  `CORS_ORIGINS` en el `.env` de la API y reiníciala. `*` se ignora.
+- **"El modelo no está disponible"** en el simulador: la API no encuentra
+  `data/models/random_forest.pkl` y responde 503. Ver
+  [db/seed/LEEME.md](../db/seed/LEEME.md).
