@@ -1,13 +1,15 @@
-﻿# Descarga los artefactos que no van en git (semilla de la base y modelo) desde
-# un GitHub Release y verifica cada uno contra SHA256SUMS (que sí está en git).
+﻿# Verifica la semilla y descarga el modelo, comprobando ambos con SHA256SUMS.
 # Equivalente a descargar-artefactos.sh.
+#   - db/seed/semilla.dump: debe copiarse antes al servidor con scp (no está en
+#     la Release); el script solo la verifica. Ver docs/DESPLIEGUE.md, 5.2.
+#   - data/models/random_forest.pkl: si falta, se descarga de la Release.
 #
 #   .\scripts\descargar-artefactos.ps1
 #   .\scripts\descargar-artefactos.ps1 -Url https://.../releases/download/<etiqueta>
 #   .\scripts\descargar-artefactos.ps1 -Forzar   # reemplaza archivos locales distintos
 #
-# URL base: -Url, variable ARTEFACTOS_URL o la de abajo. Si una huella no
-# coincide, el archivo se descarta y el script sale con 1.
+# URL de la Release: -Url, variable ARTEFACTOS_URL o la de abajo. Si una huella
+# no coincide, el archivo se descarta y el script sale con 1.
 param(
     [string]$Url = $(if ($env:ARTEFACTOS_URL) { $env:ARTEFACTOS_URL } else { 'https://github.com/Sheila-Amaya/crash-severity-predictor/releases/download/artefactos-v1' }),
     [switch]$Forzar
@@ -51,7 +53,14 @@ foreach ($linea in Get-Content $sumas) {
         Invoke-WebRequest -Uri "$Url/$nombre" -OutFile $parcial -UseBasicParsing
     } catch {
         Remove-Item -LiteralPath $parcial -Force -ErrorAction SilentlyContinue
-        Write-Host "ERROR: no se pudo descargar $Url/$nombre ($($_.Exception.Message))" -ForegroundColor Red
+        if ($nombre -eq 'semilla.dump') {
+            Write-Host "ERROR: falta $relativa. La semilla no se descarga: cópiala antes al servidor" -ForegroundColor Red
+            Write-Host '       desde un equipo que la tenga, por ejemplo:'
+            Write-Host '         scp db/seed/semilla.dump TU_USUARIO@TU_SERVIDOR:crash-severity-predictor/db/seed/'
+            Write-Host '       Ver docs/DESPLIEGUE.md, sección 5.2.'
+        } else {
+            Write-Host "ERROR: no se pudo descargar $Url/$nombre ($($_.Exception.Message))" -ForegroundColor Red
+        }
         $errores++; continue
     }
     $real = Huella $parcial

@@ -24,7 +24,7 @@ falla() {
   exit 1
 }
 
-[[ -f "$SEMILLA" ]] || falla "falta db/seed/semilla.dump. Descárguela del GitHub Release (y verifique su SHA-256) o genérela con scripts/docker/generar_semilla.sh. Ver 'Despliegue con Docker' en el README."
+[[ -f "$SEMILLA" ]] || falla "falta db/seed/semilla.dump. Cópiela con scp (scp db/seed/semilla.dump TU_USUARIO@TU_SERVIDOR:crash-severity-predictor/db/seed/), verifíquela con scripts/descargar-artefactos.sh o genérela con scripts/docker/generar_semilla.sh. Ver docs/DESPLIEGUE.md, sección 5.2."
 [[ -n "${APP_DB_PASSWORD:-}" ]] || falla "APP_DB_PASSWORD no está definida."
 
 if [[ -f "$HUELLA" ]]; then

@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Descarga los artefactos que no van en git (la semilla de la base y el modelo)
-# desde un GitHub Release y verifica cada uno contra SHA256SUMS, que SÍ está en
-# git: la huella de referencia no viene del mismo lugar que el archivo.
+# Verifica la semilla y descarga el modelo, comprobando ambos con SHA256SUMS:
+#   - db/seed/semilla.dump: debe copiarse antes al servidor con scp (no está en
+#     la Release); el script solo la verifica. Ver docs/DESPLIEGUE.md, 5.2.
+#   - data/models/random_forest.pkl: si falta, se descarga de la Release.
+# Un archivo presente y correcto no se descarga de nuevo. Si una huella no
+# coincide, el archivo se descarta y el script sale con 1.
 #
 # Uso (desde cualquier carpeta):
 #   bash scripts/descargar-artefactos.sh
 #   bash scripts/descargar-artefactos.sh --url https://.../releases/download/<etiqueta>
 #   bash scripts/descargar-artefactos.sh --forzar   # reemplaza archivos locales distintos
 #
-# URL base (en este orden): --url, variable ARTEFACTOS_URL o la de abajo. Cada
-# archivo se pide como <URL base>/<nombre del archivo> (semilla.dump,
-# random_forest.pkl). Un archivo que ya está y coincide no se descarga de nuevo.
-# Si una huella no coincide, el archivo se descarta y el script sale con 1.
+# URL de la Release (en este orden): --url, variable ARTEFACTOS_URL o la de abajo.
 set -Eeuo pipefail
 
 URL_POR_DEFECTO="https://github.com/Sheila-Amaya/crash-severity-predictor/releases/download/artefactos-v1"
@@ -79,7 +79,14 @@ while read -r esperado ruta; do
   echo "[descargando] $nombre -> $ruta"
   if ! bajar "$url/$nombre" "$parcial"; then
     rm -f "$parcial"
-    echo "ERROR: no se pudo descargar $url/$nombre" >&2
+    if [[ "$nombre" == semilla.dump ]]; then
+      echo "ERROR: falta $ruta. La semilla no se descarga: cópiala antes al servidor" >&2
+      echo "       desde un equipo que la tenga, por ejemplo:" >&2
+      echo "         scp db/seed/semilla.dump TU_USUARIO@TU_SERVIDOR:crash-severity-predictor/db/seed/" >&2
+      echo "       Ver docs/DESPLIEGUE.md, sección 5.2." >&2
+    else
+      echo "ERROR: no se pudo descargar $url/$nombre" >&2
+    fi
     errores=1
     continue
   fi
