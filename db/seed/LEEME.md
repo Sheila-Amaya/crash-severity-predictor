@@ -31,9 +31,17 @@ variable `ARTEFACTOS_URL`), compara cada uno con `SHA256SUMS` y:
 
 ## Publicar una versión nueva de los artefactos
 
-1. Genere la semilla desde la base de Docker en marcha con
-   `scripts/docker/generar_semilla.sh` (o `.ps1`). Un respaldo de
-   `scripts/docker/respaldar.*` tiene el mismo formato y también sirve.
+1. Genere la semilla desde la base de Docker en marcha (es un `pg_dump` del
+   esquema `public`, sin `fallecido_lesionado_old`, de unos 5 MB):
+
+   ```bash
+   bash scripts/docker/generar_semilla.sh            # PowerShell: .\scripts\docker\generar_semilla.ps1
+   bash scripts/docker/generar_semilla.sh --forzar   # reemplaza la actual y la guarda como semilla.dump.anterior
+   ```
+
+   Crea `semilla.dump` y `semilla.dump.sha256`. Un respaldo de
+   `scripts/docker/respaldar.*` tiene el mismo formato y también sirve
+   (copiado como `db/seed/semilla.dump`, con su huella).
 2. Actualice las huellas y haga commit de `SHA256SUMS`:
 
    ```bash

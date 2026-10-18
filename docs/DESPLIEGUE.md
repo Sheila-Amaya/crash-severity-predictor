@@ -30,6 +30,7 @@ Contenido:
 8. [Respaldos automáticos](#8-respaldos-automáticos)
 9. [Actualizar y volver atrás](#9-actualizar-y-volver-atrás)
 10. [Problemas frecuentes](#10-problemas-frecuentes)
+11. [Referencia del stack de Docker](#11-referencia-del-stack-de-docker)
 
 ---
 
@@ -466,3 +467,101 @@ el problema esté resuelto: `git switch main && git pull --ff-only` y repita
   `docker compose ps -a` y `docker inspect --format '{{.State.OOMKilled}}' <contenedor>`.
 - **Disco**: `df -h` y `docker system df`. Los registros de Docker rotan
   (3 x 10 MB por servicio); `docker image prune -f` libera imágenes viejas.
+
+---
+
+## 11. Referencia del stack de Docker
+
+Vale para el servidor y para el modo local (`docker compose up -d --build`,
+app en `http://localhost:8080`).
+
+### Servicios
+
+- **db** (`postgis/postgis:17-3.5`): con el volumen vacío,
+  `db/docker/20_semilla.sh` verifica el SHA-256 de la semilla, la restaura,
+  crea el rol `app_lectura` (solo `CONNECT` y `SELECT`, transacciones de solo
+  lectura) y comprueba los conteos (71,942 víctimas, 13,741 fallecidos, 58,201
+  lesionados, 52,488 hechos). Si falta la semilla o algo no cuadra, se detiene
+  con un mensaje claro. El rol tiene `statement_timeout` de 10 s y un máximo de
+  20 conexiones (`db/docker/30_limites_app_lectura.sql`). No publica puertos.
+- **api** (`Dockerfile`, Python 3.14.0, scikit-learn 1.8.0): usuario no root y
+  `HEALTHCHECK` a `/`. El modelo `data/models/random_forest.pkl` se monta como
+  volumen de solo lectura; el build comprueba que el `.pkl` y SHAP cargan con
+  las versiones de la imagen. Si falta, la API arranca, lo indica en su log y
+  `/api/predecir` responde 503. No publica puertos ni tiene salida a internet.
+- **web** (`frontend/Dockerfile`, nginx):
+  - sirve la SPA (con `/simulador` y `/acerca` recargables) y hace proxy de
+    `/api` a la API (mismo origen, sin CORS);
+  - gzip y caché inmutable para `/assets/`;
+  - cabeceras de seguridad: CSP con el hash del script del tema, `nosniff`,
+    `Referrer-Policy`, `X-Frame-Options: DENY` y `Cross-Origin-Opener-Policy`;
+  - límites por IP: 10 peticiones/s en `/api` (ráfaga 30) y 30/min en
+    `POST /api/predecir` (ráfaga 10), con respuesta 429; cuerpo máximo 4 KB;
+  - `/docs`, `/redoc` y `/openapi.json` responden 404.
+- **caddy** (solo con `docker-compose.prod.yml`): TLS automático para
+  `DOMINIO`, redirección de HTTP a HTTPS y HSTS; único servicio con puertos.
+
+Todos tienen `restart: unless-stopped`, registros con rotación (3 x 10 MB) y
+límite de memoria (db 512 MiB, api 768 MiB, web 64 MiB, caddy 128 MiB).
+
+### Variables (`.env`)
+
+| Variable | Obligatoria | Uso |
+|---|---|---|
+| `POSTGRES_PASSWORD` | Sí | Superusuario `postgres` del contenedor db. |
+| `APP_DB_PASSWORD` | Sí | Rol `app_lectura` (solo `SELECT`) con el que se conecta la API. Solo letras y números: va dentro de una URL. |
+| `POSTGRES_DB` | No | Nombre de la base (por defecto `severidad_vial`). |
+| `WEB_PORT` | No | Puerto del host donde escucha nginx en modo local (por defecto `8080`). |
+| `DOMINIO` | Con `docker-compose.prod.yml` | Dominio público que Caddy sirve por HTTPS. |
+| `DB_PUERTO_LOCAL` | No | Puerto de `127.0.0.1` para la base en desarrollo (por defecto `5433`). |
+| `DB_URL` | Desarrollo | Conexión de la API fuera de Docker (uvicorn a mano y `pytest -m integration`). `dev.ps1` la arma sola. |
+| `CORS_ORIGINS` | No | Orígenes permitidos, separados por coma. Vacío = ninguno; `*` se ignora. |
+
+Si falta una obligatoria, Compose se detiene con un mensaje que la nombra.
+Genere contraseñas con `openssl rand -hex 24`.
+
+### Operación
+
+```bash
+docker compose ps                      # estado y salud
+docker compose logs -f api             # logs de web, api o db (sin cadenas de conexión)
+docker compose restart api             # reiniciar un servicio
+docker compose down                    # detener (conserva los datos)
+docker compose down -v                 # detener Y BORRAR la base (volumen pgdata)
+docker compose up -d --build           # tras un git pull: reconstruye api y web
+```
+
+La semilla solo se usa con el volumen vacío. Para cargar datos nuevos en una
+base existente, use `restaurar.sh` (sección 8).
+
+`docker-compose.dev.yml` es solo para desarrollo: publica la base en
+`127.0.0.1`. Si después levanta el stack completo sin ese override, Compose
+recrea el contenedor `db` sin el puerto; los datos están en el volumen.
+
+En Windows, `scripts/docker/respaldar.ps1` y `restaurar.ps1` son las versiones
+manuales de PowerShell (un archivo en `respaldos/`, sin retención; en
+`restaurar.ps1`, `-Confirmado` omite la pregunta).
+
+### Problemas frecuentes en local
+
+- **`required variable POSTGRES_PASSWORD is missing a value`**: falta la
+  variable en `.env`, o se ejecutó `docker compose` fuera de la raíz del repo.
+- **El contenedor db se detiene con "conteos inesperados"** (o una semilla
+  corregida no se carga): corrija la semilla y luego ejecute
+  `docker compose down -v` y `docker compose up -d`. El `-v` es necesario: el
+  volumen quedó inicializado a medias y, si no, la carga no se repite.
+- **`Bind for 0.0.0.0:8080 failed: port is already allocated`**: otro programa
+  usa el puerto; cambie `WEB_PORT` en `.env`.
+- **`dev.ps1`: "Docker no está corriendo"**: abra Docker Desktop y espere a
+  que diga *Engine running*.
+- **Puerto 5433 ocupado** (`dev.ps1` o `docker compose ... up -d db`): cambie
+  `DB_PUERTO_LOCAL` en `.env` (y el puerto de `DB_URL`).
+- **`pytest -m integration` falla con "connection refused"**: la base local no
+  está publicada; ejecute `.\dev.ps1 -SoloBase` y compruebe que `DB_URL` en
+  `.env` apunte a `127.0.0.1` y a ese puerto.
+- **Cambié `APP_DB_PASSWORD` y la API ya no conecta**: la contraseña del rol se
+  fija al crear el volumen. Cámbiela también en la base con
+  `docker compose exec db psql -U postgres -d severidad_vial -c "ALTER ROLE app_lectura PASSWORD '<nueva>'"`.
+- **Errores raros (`$'\r'`) al correr los `.sh` en Linux**: el archivo tiene
+  saltos de línea de Windows. `.gitattributes` los fija en LF; vuelva a
+  obtenerlos con `git checkout -- scripts db`.

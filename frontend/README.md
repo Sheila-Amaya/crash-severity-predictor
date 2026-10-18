@@ -38,18 +38,12 @@ credenciales; la conexión a la base vive solo en la API.
 
 ## Cómo levantarlo
 
-**En Windows, todo de una vez:** `.\dev.ps1` (en la raíz) levanta la base
-PostgreSQL/PostGIS de Docker (publicada solo en `127.0.0.1`), espera a que esté
-lista y abre dos ventanas de PowerShell: la API (con el `.venv` activado) y
-`npm run dev`. Requiere Docker en marcha y las contraseñas en el `.env` de la
-raíz (ver el README de la raíz).
-
-**A mano** (desde la raíz del repo):
+El entorno completo (base, API y frontend) se levanta con `.\dev.ps1` desde la
+raíz; ver [Desarrollo local](../README.md#desarrollo-local) en el README de la
+raíz. Solo el frontend, con la API ya en marcha:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db   # base en 127.0.0.1:5433
-uvicorn core.app:app --reload        # API en http://localhost:8000 (DB_URL de .env)
-cd frontend && npm run dev           # http://localhost:5173
+npm run dev           # http://localhost:5173
 ```
 
 En desarrollo el navegador llama a `/api/...` en el mismo origen y Vite lo
@@ -64,7 +58,7 @@ npm run preview                                      # sirve dist/ en http://loc
 
 Con Docker no hace falta nada de esto a mano: `frontend/Dockerfile` compila
 con `VITE_API_URL` vacía y nginx (`frontend/nginx.conf`) sirve la SPA y hace
-de proxy de `/api` (ver "Despliegue con Docker" en el README de la raíz).
+de proxy de `/api` (ver [docs/DESPLIEGUE.md](../docs/DESPLIEGUE.md)).
 
 `dist/` es un sitio estático. Al publicarlo:
 
@@ -149,10 +143,8 @@ frontend/
 
 - **Límites departamentales y municipales:** IDEG — Infraestructura de Datos
   Espaciales de Guatemala (capas `agrip_03_Limites_departamentales` y
-  `agrip_04_Limites_municipales_340`, en `data/IDEG/`). Los archivos son
-  exportaciones GeoJSON sin metadatos de licencia: **la licencia y los términos
-  de uso no están indicados en los archivos** y deben confirmarse con IDEG antes
-  de publicar.
+  `agrip_04_Limites_municipales_340`). Licencia pendiente de confirmar; ver
+  [docs/LICENCIAS_DATOS.md](../docs/LICENCIAS_DATOS.md).
 - La API sirve esas geometrías simplificadas (`/api/mapa/coropletico`).
 - **Contexto geográfico (países, costa y fronteras):** Natural Earth v5.1.2,
   `admin_0_countries` y `admin_0_boundary_lines_land`. Licencia: **dominio
@@ -201,5 +193,6 @@ Docker Desktop y ejecuta `.\dev.ps1` (o `.\dev.ps1 -SoloBase`); luego pulsa
 Reintentar.
 
 **El simulador dice "El modelo no está disponible".** Falta
-`data/models/random_forest.pkl` (no está en git); la API responde 503 en
-`/api/predecir`. Ver el README de la raíz para generarlo.
+`data/models/random_forest.pkl` y la API responde 503 en `/api/predecir`.
+Obtenlo con `bash scripts/descargar-artefactos.sh` (ver
+[db/seed/LEEME.md](../db/seed/LEEME.md)) y reinicia la API.
