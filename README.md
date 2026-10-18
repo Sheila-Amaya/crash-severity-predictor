@@ -11,7 +11,7 @@ resultaría fallecida o lesionada y explica cada estimación con SHAP.
 
 <!-- Demo: pendiente -->
 
-![Mapa de víctimas por departamento](docs/capturas/mapa.webp)
+![Mapa de burbujas de víctimas por departamento en tema oscuro, con filtros, cifras clave y ranking de fallecidos](docs/capturas/mapa.webp)
 
 ## Qué hace
 
@@ -29,7 +29,7 @@ resultaría fallecida o lesionada y explica cada estimación con SHAP.
 
 | Simulador | Tema claro | Móvil |
 |---|---|---|
-| ![Simulador con resultado](docs/capturas/simulador.webp) | ![Mapa en tema claro](docs/capturas/mapa-claro.webp) | ![Mapa en móvil](docs/capturas/mapa-movil.webp) |
+| ![Simulador con un caso calculado: clase Fallecido, puntaje de severidad 0.716 y los tres factores SHAP](docs/capturas/simulador.webp) | ![Mapa de burbujas en tema claro](docs/capturas/mapa-claro.webp) | ![Mapa de burbujas en un teléfono, tema oscuro](docs/capturas/mapa-movil.webp) |
 
 ## Arquitectura
 
