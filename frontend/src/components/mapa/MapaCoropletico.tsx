@@ -41,22 +41,10 @@ type Caja4 = [number, number, number, number]
 // Guatemala completa (oeste, sur, este, norte)
 const GUATEMALA: Caja4 = [-92.25, 13.72, -88.2, 17.82]
 const PITCH_3D = 50
-const RADIO_CIFRA = 15 // radio mínimo (px) para escribir la cifra dentro
-const TAMANO_CIFRA = 9.5 // px; igual que .cifra-burbuja en index.css
 const BORDE_FRENTE = 1.25 // px, contorno de la burbuja bajo el cursor
 const SEPARACION_ETIQUETA = 8
 // Alto (px) que ocupan abajo la ficha táctil, el selector de vista y la barra
 const ALTO_ZONA_FICHA = 280
-
-/**
- * La cifra solo se escribe si cabe entera dentro de la burbuja, sin tocar el
- * contorno de hover (JetBrains Mono: cada carácter mide 0.6 em).
- */
-function cabeCifra(texto: string, radio: number): boolean {
-  const mitadAncho = (texto.length * 0.6 * TAMANO_CIFRA) / 2
-  const mitadAlto = TAMANO_CIFRA * 0.6
-  return radio >= RADIO_CIFRA && Math.hypot(mitadAncho, mitadAlto) <= radio - BORDE_FRENTE - 0.5
-}
 
 const CAPAS_INTERACTIVAS: Record<Vista, string[]> = {
   burbujas: ['burbujas', 'areas-relleno'],
@@ -826,21 +814,6 @@ export function MapaCoropletico() {
       el.textContent = texto
       const marcador = nuevo(lngLat, el)
       etiquetas.current.push({ marcador, elemento: el, lngLat, burbuja: -1, radio: -SEPARACION_ETIQUETA })
-    }
-
-    // Cifras nítidas dentro de las burbujas grandes (HTML, sin difuminado),
-    // solo si caben enteras: así el contorno de hover nunca las corta
-    if (vista === 'burbujas' && capas) {
-      for (const f of capas.burbujas.features) {
-        const p = f.properties as PropiedadesMapa & { radio: number }
-        const texto = formatoEntero(p.total)
-        if (p.clase === 0 || !cabeCifra(texto, p.radio)) continue
-        const el = document.createElement('span')
-        el.className = 'cifra-burbuja'
-        el.textContent = texto
-        el.style.color = p.clase <= 2 ? paleta.mapCifraBaja : paleta.mapCifraAlta
-        nuevo(f.geometry.coordinates as [number, number], el)
-      }
     }
 
     recolocar.current()
