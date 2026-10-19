@@ -29,7 +29,7 @@ function VolverNacional() {
     <button
       type="button"
       onClick={() => setFiltro('depto', undefined)}
-      className="flotante pointer-events-auto flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-tinta hover:bg-panel-2"
+      className="flotante pointer-events-auto flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-tinta hover:bg-panel-2 max-lg:min-h-11"
     >
       <span aria-hidden="true">←</span> Volver a nivel nacional
       {nombre && <span className="etiqueta text-[10px]">· {nombre}</span>}
@@ -53,6 +53,8 @@ export function Panel() {
   const [plegado, setPlegado] = useState(false)
   const [hoja, setHoja] = useState<Hoja>(null)
   const activos = useFiltros((estado) => contarFiltros(estado.filtros))
+  const hayTerritorio = useFiltros((estado) => estado.filtros.depto !== undefined || estado.filtros.municipio !== undefined)
+  const setFiltro = useFiltros((estado) => estado.setFiltro)
   // Cada variante se monta solo en su tamaño (no hay gráficas ocultas de tamaño 0)
   const escritorio = useEsEscritorio()
   // Estable: la hoja enfoca y restaura el foco solo al abrir/cerrar
@@ -107,21 +109,32 @@ export function Panel() {
               <Insignia />
               <SelectorVista />
             </div>
+            {/* Barra inferior: abre las hojas; con un territorio elegido, vuelve al país */}
             <div
               data-obstaculo="abajo"
-              className="flotante pointer-events-auto absolute right-4 bottom-4 left-4 grid grid-cols-2 overflow-hidden"
+              className={`flotante pointer-events-auto absolute right-4 bottom-4 left-4 grid overflow-hidden ${hayTerritorio ? 'grid-cols-3' : 'grid-cols-2'}`}
             >
-          <button
-            type="button"
-            onClick={() => setHoja('filtros')}
-            aria-haspopup="dialog"
-            className="border-r border-borde px-3 py-2.5 text-sm font-medium"
-          >
-            Filtros <span className="cifra text-tenue">{activos}/9</span>
-          </button>
-              <button type="button" onClick={() => setHoja('datos')} aria-haspopup="dialog" className="px-3 py-2.5 text-sm font-medium">
+              <button
+                type="button"
+                onClick={() => setHoja('filtros')}
+                aria-haspopup="dialog"
+                className="min-h-11 border-r border-borde px-3 py-2.5 text-sm font-medium"
+              >
+                Filtros <span className="cifra text-tenue">{activos}/9</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setHoja('datos')}
+                aria-haspopup="dialog"
+                className={`min-h-11 px-3 py-2.5 text-sm font-medium ${hayTerritorio ? 'border-r border-borde' : ''}`}
+              >
                 Datos
               </button>
+              {hayTerritorio && (
+                <button type="button" onClick={() => setFiltro('depto', undefined)} className="min-h-11 px-3 py-2.5 text-sm font-medium">
+                  Todo el país
+                </button>
+              )}
             </div>
           </>
         )}
@@ -133,10 +146,14 @@ export function Panel() {
         <BarraFiltros prefijo="hoja-filtro" conCabecera={false} />
       </HojaInferior>
       <HojaInferior titulo="Datos" abierta={!escritorio && hoja === 'datos'} onCerrar={cerrarHoja}>
-        <div className="p-3">
-          <Leyenda ancho="w-full" />
-        </div>
         <PestanasDatos />
+        {/* La leyenda va después del ranking y plegada: los datos se ven primero */}
+        <details className="border-t border-borde">
+          <summary className="etiqueta flex min-h-11 cursor-pointer items-center px-3 text-tinta">Leyenda del mapa</summary>
+          <div className="px-3 pb-3">
+            <Leyenda ancho="w-full" />
+          </div>
+        </details>
       </HojaInferior>
     </div>
   )

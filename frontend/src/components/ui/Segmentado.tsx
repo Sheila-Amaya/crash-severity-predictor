@@ -23,7 +23,7 @@ export function Segmentado<T extends string>({ etiqueta, opciones, valor, onCamb
         {opciones.map((opcion) => (
           <label
             key={opcion.valor}
-            className="flex-1 cursor-pointer border-r border-borde-fuerte px-2 py-1 text-center font-mono text-[11px] uppercase tracking-wide text-tenue transition-colors duration-150 last:border-r-0 hover:text-tinta has-checked:bg-boton has-checked:text-boton-texto has-focus-visible:outline-2 has-focus-visible:outline-foco"
+            className="flex-1 cursor-pointer border-r border-borde-fuerte px-2 py-1 text-center font-mono max-lg:flex max-lg:min-h-11 max-lg:items-center max-lg:justify-center text-[11px] uppercase tracking-wide text-tenue transition-colors duration-150 last:border-r-0 hover:text-tinta has-checked:bg-boton has-checked:text-boton-texto has-focus-visible:outline-2 has-focus-visible:outline-foco"
           >
             <input
               type="radio"

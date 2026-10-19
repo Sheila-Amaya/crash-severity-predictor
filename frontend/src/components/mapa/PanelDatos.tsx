@@ -39,7 +39,7 @@ export function PestanasDatos() {
             aria-controls={`${base}-panel-${p.valor}`}
             tabIndex={pestana === p.valor ? 0 : -1}
             onClick={() => setPestana(p.valor)}
-            className={`etiqueta -mb-px border-b-2 px-3 py-2 text-[10px] transition-colors duration-150 ${
+            className={`etiqueta -mb-px border-b-2 px-3 py-2 text-[10px] max-lg:min-h-11 transition-colors duration-150 ${
               pestana === p.valor ? 'border-acento text-tinta' : 'border-transparent hover:text-tinta'
             }`}
           >

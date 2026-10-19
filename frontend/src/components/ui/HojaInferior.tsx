@@ -36,8 +36,9 @@ export function HojaInferior({ titulo, abierta, onCerrar, children }: Props) {
             ref={cerrarRef}
             type="button"
             onClick={onCerrar}
-            className="etiqueta rounded-sm border border-borde-fuerte px-2 py-1 text-[10px] text-tinta"
+            className="etiqueta flex min-h-11 min-w-11 items-center gap-1.5 rounded-sm border border-borde-fuerte px-3 text-[11px] text-tinta"
           >
+            <span aria-hidden="true">✕</span>
             Cerrar
           </button>
         </div>

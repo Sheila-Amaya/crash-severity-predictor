@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Map as MapaLibre,
   Marker,
@@ -28,6 +28,7 @@ import { etiquetasVisibles, margenesLibres, type Lado } from '../../utils/espaci
 import { formatoEntero, formatoNulo, formatoPorcentaje } from '../../utils/formato'
 import { RADIO_MINIMO_BURBUJA, cajaEnvolvente, centroide, radioBurbuja, radioMaximo } from '../../utils/geometria'
 import { ErrorCarga } from '../ui/Estados'
+import { FichaSeleccion } from './FichaSeleccion'
 import { useClasificacionMapa } from './useClasificacionMapa'
 // Contexto: Natural Earth (dominio público), recortado con scripts/contexto_natural_earth.py.
 // 1:50m de la región en el bundle; el 1:10m alrededor de Guatemala se carga en diferido.
@@ -44,6 +45,8 @@ const RADIO_CIFRA = 15 // radio mínimo (px) para escribir la cifra dentro
 const TAMANO_CIFRA = 9.5 // px; igual que .cifra-burbuja en index.css
 const BORDE_FRENTE = 1.25 // px, contorno de la burbuja bajo el cursor
 const SEPARACION_ETIQUETA = 8
+// Alto (px) que ocupan abajo la ficha táctil, el selector de vista y la barra
+const ALTO_ZONA_FICHA = 280
 
 /**
  * La cifra solo se escribe si cabe entera dentro de la burbuja, sin tocar el
@@ -216,6 +219,15 @@ export function MapaCoropletico() {
   const coordenadas = useRef<{ lon: HTMLElement[]; lat: HTMLElement[] }>({ lon: [], lat: [] })
   const [listo, setListo] = useState(false)
   const [hover, setHover] = useState<Hover | null>(null)
+  // Ficha táctil: se guarda con las capas en que se tocó; si los datos cambian
+  // (filtros, nivel) deja de mostrarse sola
+  const [ficha, setFicha] = useState<{ props: PropiedadesMapa; capas: unknown } | null>(null)
+  const marcarHoverRef = useRef<(id: number | null) => void>(() => {})
+  const bajarNivelRef = useRef<(codigo: number) => void>(() => {})
+  const cerrarFicha = useCallback(() => {
+    setFicha(null)
+    marcarHoverRef.current(null)
+  }, [])
 
   const paleta = usePaleta()
   const reducido = usePrefiereMenosMovimiento()
@@ -531,12 +543,49 @@ export function MapaCoropletico() {
         hoverId = id
       }
 
+      marcarHoverRef.current = marcarHover
+
       const featureEn = (e: MapMouseEvent) => {
         const capasActivas = CAPAS_INTERACTIVAS[actual.current.vista].filter((c) => mapa.getLayer(c))
         return mapa.queryRenderedFeatures(e.point, { layers: capasActivas })[0]
       }
 
+      // Táctil: sin hover, el toque abre una ficha fija en lugar de bajar de nivel.
+      // pointerdown llega antes que los eventos de ratón que el navegador emula.
+      let tactil = false
+      mapa.getCanvas().addEventListener('pointerdown', (e) => {
+        tactil = e.pointerType === 'touch'
+      })
+
+      // Bajar un nivel: departamento -> sus municipios; municipio -> filtrarlo
+      const bajarNivel = (codigo: number) => {
+        const { nivel: nivelActual, vista: vistaActual, setFiltro: aplicar, reducido: sinMovimiento, capas: datos } = actual.current
+        const area = datos?.areas.features.find((f) => f.properties?.codigo === codigo)
+        const caja = area ? cajaEnvolvente({ features: [area] }) : null
+
+        const esDepto = nivelActual === 'depto'
+        const depto = esDepto ? codigo : Math.floor(codigo / 100)
+        ultimoEncuadre.current = claveEncuadreDe('municipio', depto, esDepto ? undefined : codigo, vistaActual)
+
+        if (caja) {
+          objetivo.current = caja
+          mapa.fitBounds(caja as LngLatBoundsLike, {
+            padding: margenesEncuadre(elemento),
+            maxZoom: 11,
+            duration: sinMovimiento ? 0 : 900,
+            pitch: vistaActual === '3d' ? PITCH_3D : 0,
+          })
+        }
+
+        marcarHover(null)
+        setHover(null)
+        setFicha(null)
+        aplicar(esDepto ? 'depto' : 'municipio', codigo)
+      }
+      bajarNivelRef.current = bajarNivel
+
       mapa.on('mousemove', (e) => {
+        if (tactil) return
         const feature = featureEn(e)
         if (!feature) {
           marcarHover(null)
@@ -557,30 +606,27 @@ export function MapaCoropletico() {
       mapa.on('click', (e) => {
         const feature = featureEn(e)
         const codigo = Number(feature?.properties?.codigo)
-        if (!feature || !Number.isFinite(codigo)) return
+        const valido = feature !== undefined && Number.isFinite(codigo)
 
-        const { nivel: nivelActual, vista: vistaActual, setFiltro: aplicar, reducido: sinMovimiento, capas: datos } = actual.current
-        const area = datos?.areas.features.find((f) => f.properties?.codigo === codigo)
-        const caja = area ? cajaEnvolvente({ features: [area] }) : null
-
-        // Bajar un nivel: departamento -> sus municipios; municipio -> filtrarlo
-        const esDepto = nivelActual === 'depto'
-        const depto = esDepto ? codigo : Math.floor(codigo / 100)
-        ultimoEncuadre.current = claveEncuadreDe('municipio', depto, esDepto ? undefined : codigo, vistaActual)
-
-        if (caja) {
-          objetivo.current = caja
-          mapa.fitBounds(caja as LngLatBoundsLike, {
-            padding: margenesEncuadre(elemento),
-            maxZoom: 11,
-            duration: sinMovimiento ? 0 : 900,
-            pitch: vistaActual === '3d' ? PITCH_3D : 0,
-          })
+        if (tactil) {
+          // Mapa vacío: cierra la ficha; otra burbuja o área: la reemplaza
+          setHover(null)
+          if (!valido) {
+            marcarHover(null)
+            setFicha(null)
+            return
+          }
+          marcarHover(codigo)
+          setFicha({ props: feature.properties as PropiedadesMapa, capas: actual.current.capas })
+          // Que la ficha (abajo) no tape lo tocado: si quedó debajo, se sube
+          const libreHasta = elemento.clientHeight - ALTO_ZONA_FICHA
+          if (e.point.y > libreHasta) {
+            mapa.panBy([0, e.point.y - libreHasta], { duration: actual.current.reducido ? 0 : 300 })
+          }
+          return
         }
 
-        marcarHover(null)
-        setHover(null)
-        aplicar(esDepto ? 'depto' : 'municipio', codigo)
+        if (valido) bajarNivel(codigo)
       })
 
       setListo(true)
@@ -811,6 +857,14 @@ export function MapaCoropletico() {
       />
 
       {hover && <TarjetaHover hover={hover} nivel={nivel} />}
+      {ficha && ficha.capas === capas && (
+        <FichaSeleccion
+          props={ficha.props}
+          nivel={nivel}
+          onCerrar={cerrarFicha}
+          onBajarNivel={() => bajarNivelRef.current(ficha.props.codigo)}
+        />
+      )}
 
       {(isPending || (isFetching && !clasificacion)) && (
         <p className="flotante etiqueta absolute top-28 left-1/2 -translate-x-1/2 px-3 py-1.5" role="status">

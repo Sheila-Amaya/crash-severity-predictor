@@ -39,7 +39,7 @@ export function Leyenda({ ancho = 'w-[22rem]' }: { ancho?: string }) {
           Leyenda · {nombreVista}
         </h2>
         {vista === 'burbujas' && (
-          <label className="etiqueta flex cursor-pointer items-center gap-1.5 text-[10px] text-tinta">
+          <label className="etiqueta flex cursor-pointer items-center gap-1.5 text-[10px] text-tinta max-lg:min-h-11 max-lg:px-1">
             Brillo
             <input
               type="checkbox"
@@ -131,7 +131,7 @@ export function Leyenda({ ancho = 'w-[22rem]' }: { ancho?: string }) {
       </div>
 
       <details className="mt-2 text-[10.5px]">
-        <summary className="etiqueta cursor-pointer text-[10px] text-tinta">Rangos por clase</summary>
+        <summary className="etiqueta cursor-pointer text-[10px] text-tinta max-lg:flex max-lg:min-h-11 max-lg:items-center">Rangos por clase</summary>
         <ul className="mt-1 grid grid-cols-1 gap-0.5">
           {[...clases].reverse().map((clase) => (
             <li key={clase.indice} className="flex items-baseline justify-between gap-2">

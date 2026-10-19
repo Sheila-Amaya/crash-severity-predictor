@@ -4,6 +4,7 @@ import { Bar, BarChart, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } 
 import { useCatalogos, useRanking } from '../../api/queries'
 import type { FilaRanking, Nivel, OrdenRanking } from '../../api/types'
 import { useDuracionAnimacion } from '../../hooks/movimiento'
+import { useEsTactil } from '../../hooks/useMedia'
 import { useFiltros } from '../../state/filtros'
 import { usePaleta } from '../../theme/tema'
 import { formatoEntero, formatoNulo, formatoPorcentaje } from '../../utils/formato'
@@ -30,7 +31,7 @@ const recortar = (nombre: string, maximo = 17) =>
 
 const formatoDe = (orden: OrdenRanking) => (orden === 'letalidad' ? formatoPorcentaje : formatoEntero)
 
-function TooltipRanking({ active, payload }: { active?: boolean; payload?: { payload: FilaRanking }[] }) {
+function TooltipRanking({ active, payload, tactil = false }: { active?: boolean; payload?: { payload: FilaRanking }[]; tactil?: boolean }) {
   if (!active || !payload?.length) return null
   const fila = payload[0].payload
 
@@ -43,7 +44,7 @@ function TooltipRanking({ active, payload }: { active?: boolean; payload?: { pay
       <p className="cifra text-tenue">Víctimas {formatoEntero(fila.victimas)}</p>
       <p className="cifra text-tenue">Fallecidos {formatoEntero(fila.fallecidos)}</p>
       <p className="cifra">Letalidad {formatoNulo(fila.letalidad, formatoPorcentaje)}</p>
-      <p className="etiqueta mt-1 text-[10px]">Clic para filtrar</p>
+      <p className="etiqueta mt-1 text-[10px]">{tactil ? 'Toca para filtrar' : 'Clic para filtrar'}</p>
     </div>
   )
 }
@@ -64,6 +65,9 @@ export function RankingTop({ conTitulo = true }: { conTitulo?: boolean }) {
   const { data: catalogos } = useCatalogos()
   const paleta = usePaleta()
   const duracion = useDuracionAnimacion()
+  // Táctil: el tooltip solo mientras el dedo está apoyado (no queda pegado)
+  const tactil = useEsTactil()
+  const [tocando, setTocando] = useState(false)
 
   const nombreDepto = (codigo: number | null) =>
     catalogos?.depto.find((d) => d.id === codigo)?.descripcion ?? ''
@@ -97,9 +101,27 @@ export function RankingTop({ conTitulo = true }: { conTitulo?: boolean }) {
         <p className="py-8 text-center text-sm text-tenue">Sin víctimas con estos filtros.</p>
       ) : (
         <>
-          <div className={`h-64 transition-opacity duration-200 ${isFetching ? 'opacity-60' : ''}`}>
+          {/* En móvil, filas de 44 px (zona táctil); en táctil se toca toda la fila */}
+          <div
+            className={`h-64 transition-opacity duration-200 max-lg:h-[440px] ${isFetching ? 'opacity-60' : ''}`}
+            onTouchStart={() => setTocando(true)}
+            onTouchEnd={() => setTocando(false)}
+            onTouchCancel={() => setTocando(false)}
+          >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={filas} layout="vertical" margin={{ top: 0, right: 52, bottom: 0, left: 0 }}>
+              <BarChart
+                data={filas}
+                layout="vertical"
+                margin={{ top: 0, right: 52, bottom: 0, left: 0 }}
+                onClick={
+                  tactil
+                    ? (estado) => {
+                        const fila = estado?.activePayload?.[0]?.payload as FilaRanking | undefined
+                        if (fila) seleccionar(fila)
+                      }
+                    : undefined
+                }
+              >
                 <XAxis type="number" hide />
                 <YAxis
                   type="category"
@@ -116,13 +138,17 @@ export function RankingTop({ conTitulo = true }: { conTitulo?: boolean }) {
                   tickLine={false}
                   interval={0}
                 />
-                <Tooltip content={<TooltipRanking />} cursor={{ fill: paleta.surface2 }} />
+                <Tooltip
+                  content={<TooltipRanking tactil={tactil} />}
+                  cursor={{ fill: paleta.surface2 }}
+                  active={tactil && !tocando ? false : undefined}
+                />
                 <Bar
                   dataKey="valor"
                   fill={orden === 'victimas' ? paleta.serieLesionados : paleta.serieFallecidos}
                   radius={[0, 2, 2, 0]}
                   barSize={14}
-                  onClick={(entrada) => seleccionar(entrada as unknown as FilaRanking)}
+                  onClick={tactil ? undefined : (entrada) => seleccionar(entrada as unknown as FilaRanking)}
                   className="cursor-pointer"
                   animationDuration={duracion}
                   isAnimationActive={duracion > 0}

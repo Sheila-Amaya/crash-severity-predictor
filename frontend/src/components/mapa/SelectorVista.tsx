@@ -43,7 +43,7 @@ export function SelectorVista() {
           <label
             key={opcion.valor}
             title={deshabilitada ? 'La vista 3D no está disponible en móvil' : undefined}
-            className={`border-r border-borde px-3 py-1.5 font-mono text-[11px] tracking-wider uppercase transition-colors duration-150 last:border-r-0 has-checked:bg-boton has-checked:text-boton-texto has-focus-visible:outline-2 has-focus-visible:outline-foco ${
+            className={`border-r border-borde px-3 py-1.5 font-mono max-lg:flex max-lg:min-h-11 max-lg:items-center text-[11px] tracking-wider uppercase transition-colors duration-150 last:border-r-0 has-checked:bg-boton has-checked:text-boton-texto has-focus-visible:outline-2 has-focus-visible:outline-foco ${
               deshabilitada ? 'cursor-not-allowed text-tenue/50' : 'cursor-pointer text-tenue hover:text-tinta'
             }`}
           >
