@@ -1,4 +1,4 @@
-# Severidad vial en Guatemala
+# Crash Severity — Siniestralidad vial en Guatemala
 
 > **English summary.** Interactive map, statistics API and Random Forest model of traffic-crash victim severity in Guatemala (INE microdata, 2018–2024).
 > SHAP explains each prediction; the stack runs with Docker (React + MapLibre, nginx, FastAPI, PostgreSQL/PostGIS).
@@ -62,6 +62,7 @@ docker compose up -d --build           # app en http://localhost:8080
 
 Modelo y semilla de la base: [db/seed/LEEME.md](db/seed/LEEME.md). Para
 publicar en un servidor con dominio y HTTPS: [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md).
+En servidores ARM (por ejemplo, Oracle Cloud Always Free) se suma `docker-compose.arm64.yml`: [Servidor ARM](docs/DESPLIEGUE.md#12-servidor-arm-oracle-cloud-always-free).
 
 ## Desarrollo local
 

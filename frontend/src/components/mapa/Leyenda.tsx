@@ -2,7 +2,7 @@ import { useMapaUi } from '../../state/mapaUi'
 import { usePaleta } from '../../theme/tema'
 import type { Metrica } from '../../utils/clasificacion'
 import { formatoEntero, formatoPorcentaje } from '../../utils/formato'
-import { radioBurbuja, radioMaximo } from '../../utils/geometria'
+import { RADIO_MINIMO_BURBUJA, radioBurbuja, radioMaximo } from '../../utils/geometria'
 import { Segmentado } from '../ui/Segmentado'
 import { useClasificacionMapa } from './useClasificacionMapa'
 
@@ -39,7 +39,7 @@ export function Leyenda({ ancho = 'w-[22rem]' }: { ancho?: string }) {
           Leyenda · {nombreVista}
         </h2>
         {vista === 'burbujas' && (
-          <label className="etiqueta flex cursor-pointer items-center gap-1.5 text-[10px] text-tinta">
+          <label className="etiqueta flex cursor-pointer items-center gap-1.5 text-[10px] text-tinta max-lg:min-h-11 max-lg:px-1">
             Brillo
             <input
               type="checkbox"
@@ -86,7 +86,8 @@ export function Leyenda({ ancho = 'w-[22rem]' }: { ancho?: string }) {
         {vista === 'burbujas' && muestras.length > 0 && (
           <div className="flex items-end gap-2" role="img" aria-label={`Tamaño: víctimas (${muestras.map(formatoEntero).join(' y ')})`}>
             {muestras.map((valor) => {
-              const r = radioBurbuja(valor, maxTotal, 5, radioMax) * 0.55
+              // Mismo radio que en el mapa (radioBurbuja con los mismos parámetros)
+              const r = radioBurbuja(valor, maxTotal, RADIO_MINIMO_BURBUJA, radioMax)
               return (
                 <span key={valor} className="flex flex-col items-center">
                   <svg width={r * 2 + 2} height={r * 2 + 2} aria-hidden="true">
@@ -130,7 +131,7 @@ export function Leyenda({ ancho = 'w-[22rem]' }: { ancho?: string }) {
       </div>
 
       <details className="mt-2 text-[10.5px]">
-        <summary className="etiqueta cursor-pointer text-[10px] text-tinta">Rangos por clase</summary>
+        <summary className="etiqueta cursor-pointer text-[10px] text-tinta max-lg:flex max-lg:min-h-11 max-lg:items-center">Rangos por clase</summary>
         <ul className="mt-1 grid grid-cols-1 gap-0.5">
           {[...clases].reverse().map((clase) => (
             <li key={clase.indice} className="flex items-baseline justify-between gap-2">

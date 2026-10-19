@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-const SITIO = 'Severidad vial · Guatemala'
+const SITIO = 'Crash Severity · Guatemala'
 
 /** Título de la pestaña y meta description de cada página. */
 export function useTituloPagina(titulo: string, descripcion: string) {

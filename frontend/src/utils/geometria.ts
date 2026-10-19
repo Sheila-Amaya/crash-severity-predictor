@@ -108,6 +108,9 @@ export function cajaEnvolvente(coleccion: { features: { geometry: GeoJSON.Geomet
   return Number.isFinite(oeste) ? [oeste, sur, este, norte] : null
 }
 
+/** Radio mínimo (px) de las burbujas del mapa; la leyenda usa el mismo. */
+export const RADIO_MINIMO_BURBUJA = 4
+
 /** Radio de burbuja proporcional a la raíz cuadrada del valor (área ∝ valor). */
 export function radioBurbuja(valor: number, maximo: number, minimo = 6, maximoPx = 36): number {
   if (valor <= 0 || maximo <= 0) return 0
@@ -116,9 +119,11 @@ export function radioBurbuja(valor: number, maximo: number, minimo = 6, maximoPx
 
 /**
  * Tope del radio de burbuja (px) según nivel y ancho de pantalla: con la raíz
- * cuadrada, la mayor (Guatemala) llega al tope sin tapar a sus vecinas.
+ * cuadrada, la mayor (Guatemala) llega al tope sin tapar a sus vecinas. A
+ * nivel nacional, 20 px en escritorio deja a Guatemala y Sacatepéquez (las
+ * más cercanas, ~30 px entre centroides) sin solaparse.
  */
 export function radioMaximo(nivel: Nivel): number {
   const pequena = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 639px)').matches
-  return nivel === 'depto' ? (pequena ? 17 : 24) : pequena ? 14 : 20
+  return nivel === 'depto' ? (pequena ? 15 : 20) : pequena ? 14 : 20
 }

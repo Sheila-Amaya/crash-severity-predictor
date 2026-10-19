@@ -1,0 +1,18 @@
+# Override para servidores ARM (linux/arm64, p. ej. Ampere): se suma a
+# docker-compose.yml y docker-compose.prod.yml sin cambiarlos.
+#
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml:docker-compose.arm64.yml
+#
+# La imagen oficial postgis/postgis:17-3.5 solo existe para amd64; las demás
+# (python, node, nginx, caddy) ya son multiarquitectura. Guía:
+# docs/DESPLIEGUE.md, sección "Servidor ARM (Oracle Cloud Always Free)".
+
+services:
+  db:
+    # Misma versión (PostgreSQL 17 + PostGIS 3.5), publicada para amd64 y arm64
+    image: imresamu/postgis:17-3.5
+
+  api:
+    # Margen para servidores ARM pequeños; el resto viene del HEALTHCHECK del Dockerfile
+    healthcheck:
+      timeout: 10s

@@ -91,15 +91,6 @@ for (const [tema, p] of Object.entries(palette)) {
   if (!jerarquia) fallos++
   console.log(`${jerarquia ? 'OK  ' : 'FALLA'} Jerarquía: límites IDEG > fronteras de contexto > retícula`)
 
-  // Cifra dentro de la burbuja: mapCifraBaja sobre las clases 1-2, mapCifraAlta sobre 3-5
-  p.mapScale.forEach((color, i) => {
-    const texto = i < 2 ? p.mapCifraBaja : p.mapCifraAlta
-    const ratio = contraste(texto, color)
-    const ok = ratio >= TEXTO
-    if (!ok) fallos++
-    console.log(`${ok ? 'OK  ' : 'FALLA'} ${ratio.toFixed(2).padStart(5)}:1 (mín 4.5) Cifra en burbuja / clase ${i + 1}  [${texto} sobre ${color}]`)
-  })
-
   // Resaltado al pasar el cursor: línea y borde de tonos opuestos, para
   // verse sobre cualquier clase (incluida la más clara)
   const minHover = Math.min(...[...p.mapScale, p.mapNull].map((c) => Math.max(contraste(p.mapHover, c), contraste(p.mapHoverCasing, c))))

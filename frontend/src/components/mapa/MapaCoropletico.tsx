@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Map as MapaLibre,
   Marker,
@@ -26,8 +26,9 @@ import { usePaleta, type Paleta } from '../../theme/tema'
 import type { PropiedadesMapa } from '../../utils/clasificacion'
 import { etiquetasVisibles, margenesLibres, type Lado } from '../../utils/espacio'
 import { formatoEntero, formatoNulo, formatoPorcentaje } from '../../utils/formato'
-import { cajaEnvolvente, centroide, radioBurbuja, radioMaximo } from '../../utils/geometria'
+import { RADIO_MINIMO_BURBUJA, cajaEnvolvente, centroide, radioBurbuja, radioMaximo } from '../../utils/geometria'
 import { ErrorCarga } from '../ui/Estados'
+import { FichaSeleccion } from './FichaSeleccion'
 import { useClasificacionMapa } from './useClasificacionMapa'
 // Contexto: Natural Earth (dominio público), recortado con scripts/contexto_natural_earth.py.
 // 1:50m de la región en el bundle; el 1:10m alrededor de Guatemala se carga en diferido.
@@ -40,8 +41,10 @@ type Caja4 = [number, number, number, number]
 // Guatemala completa (oeste, sur, este, norte)
 const GUATEMALA: Caja4 = [-92.25, 13.72, -88.2, 17.82]
 const PITCH_3D = 50
-const RADIO_CIFRA = 15 // radio mínimo (px) para escribir la cifra dentro
+const BORDE_FRENTE = 1.25 // px, contorno de la burbuja bajo el cursor
 const SEPARACION_ETIQUETA = 8
+// Alto (px) que ocupan abajo la ficha táctil, el selector de vista y la barra
+const ALTO_ZONA_FICHA = 280
 
 const CAPAS_INTERACTIVAS: Record<Vista, string[]> = {
   burbujas: ['burbujas', 'areas-relleno'],
@@ -204,6 +207,15 @@ export function MapaCoropletico() {
   const coordenadas = useRef<{ lon: HTMLElement[]; lat: HTMLElement[] }>({ lon: [], lat: [] })
   const [listo, setListo] = useState(false)
   const [hover, setHover] = useState<Hover | null>(null)
+  // Ficha táctil: se guarda con las capas en que se tocó; si los datos cambian
+  // (filtros, nivel) deja de mostrarse sola
+  const [ficha, setFicha] = useState<{ props: PropiedadesMapa; capas: unknown } | null>(null)
+  const marcarHoverRef = useRef<(id: number | null) => void>(() => {})
+  const bajarNivelRef = useRef<(codigo: number) => void>(() => {})
+  const cerrarFicha = useCallback(() => {
+    setFicha(null)
+    marcarHoverRef.current(null)
+  }, [])
 
   const paleta = usePaleta()
   const reducido = usePrefiereMenosMovimiento()
@@ -248,7 +260,7 @@ export function MapaCoropletico() {
             properties: {
               ...f.properties,
               // Raíz cuadrada con tope (radioMax): la mayor no tapa a sus vecinas
-              radio: radioBurbuja(f.properties.total, maxTotal, 4, radioMax),
+              radio: radioBurbuja(f.properties.total, maxTotal, RADIO_MINIMO_BURBUJA, radioMax),
               // Halo más intenso en los dos grupos más altos (quintiles 4 y 5)
               intenso: k >= 2 && f.properties.clase >= k - 1,
             },
@@ -480,16 +492,30 @@ export function MapaCoropletico() {
         layout: { 'circle-sort-key': ordenRadio },
         paint: { 'circle-color': ['get', 'color'], 'circle-blur': 0.8 },
       })
+      // Opacidad 1: el color de la letalidad no se mezcla con lo que hay debajo
+      const pinturaBurbuja = {
+        'circle-radius': ['case', sinVictimas, 2.5, ['get', 'radio']] as ExpressionSpecification,
+        'circle-color': ['case', sinVictimas, paleta.mapNullDot, ['get', 'color']] as ExpressionSpecification,
+        'circle-opacity': 1,
+      }
       mapa.addLayer({
         id: 'burbujas',
         type: 'circle',
         source: 'burbujas',
         layout: { 'circle-sort-key': ordenRadio },
+        paint: { ...pinturaBurbuja, 'circle-stroke-color': paleta.mapBubbleStroke },
+      })
+      // La burbuja bajo el cursor se vuelve a dibujar encima de todas, aunque sea
+      // pequeña o quede debajo de otra, con un contorno fino
+      mapa.addLayer({
+        id: 'burbujas-frente',
+        type: 'circle',
+        source: 'burbujas',
+        filter: ['==', ['get', 'codigo'], -1],
         paint: {
-          'circle-radius': ['case', sinVictimas, 2.5, ['get', 'radio']],
-          'circle-color': ['case', sinVictimas, paleta.mapNullDot, ['get', 'color']],
-          'circle-opacity': 0.92,
-          'circle-stroke-color': ['case', HOVER, paleta.mapHover, paleta.mapBubbleStroke],
+          ...pinturaBurbuja,
+          'circle-stroke-color': paleta.mapHover,
+          'circle-stroke-width': BORDE_FRENTE,
         },
       })
 
@@ -501,15 +527,53 @@ export function MapaCoropletico() {
           if (hoverId !== null) mapa.setFeatureState({ source, id: hoverId }, { hover: false })
           if (id !== null) mapa.setFeatureState({ source, id }, { hover: true })
         }
+        mapa.setFilter('burbujas-frente', ['==', ['get', 'codigo'], id ?? -1])
         hoverId = id
       }
+
+      marcarHoverRef.current = marcarHover
 
       const featureEn = (e: MapMouseEvent) => {
         const capasActivas = CAPAS_INTERACTIVAS[actual.current.vista].filter((c) => mapa.getLayer(c))
         return mapa.queryRenderedFeatures(e.point, { layers: capasActivas })[0]
       }
 
+      // Táctil: sin hover, el toque abre una ficha fija en lugar de bajar de nivel.
+      // pointerdown llega antes que los eventos de ratón que el navegador emula.
+      let tactil = false
+      mapa.getCanvas().addEventListener('pointerdown', (e) => {
+        tactil = e.pointerType === 'touch'
+      })
+
+      // Bajar un nivel: departamento -> sus municipios; municipio -> filtrarlo
+      const bajarNivel = (codigo: number) => {
+        const { nivel: nivelActual, vista: vistaActual, setFiltro: aplicar, reducido: sinMovimiento, capas: datos } = actual.current
+        const area = datos?.areas.features.find((f) => f.properties?.codigo === codigo)
+        const caja = area ? cajaEnvolvente({ features: [area] }) : null
+
+        const esDepto = nivelActual === 'depto'
+        const depto = esDepto ? codigo : Math.floor(codigo / 100)
+        ultimoEncuadre.current = claveEncuadreDe('municipio', depto, esDepto ? undefined : codigo, vistaActual)
+
+        if (caja) {
+          objetivo.current = caja
+          mapa.fitBounds(caja as LngLatBoundsLike, {
+            padding: margenesEncuadre(elemento),
+            maxZoom: 11,
+            duration: sinMovimiento ? 0 : 900,
+            pitch: vistaActual === '3d' ? PITCH_3D : 0,
+          })
+        }
+
+        marcarHover(null)
+        setHover(null)
+        setFicha(null)
+        aplicar(esDepto ? 'depto' : 'municipio', codigo)
+      }
+      bajarNivelRef.current = bajarNivel
+
       mapa.on('mousemove', (e) => {
+        if (tactil) return
         const feature = featureEn(e)
         if (!feature) {
           marcarHover(null)
@@ -530,30 +594,27 @@ export function MapaCoropletico() {
       mapa.on('click', (e) => {
         const feature = featureEn(e)
         const codigo = Number(feature?.properties?.codigo)
-        if (!feature || !Number.isFinite(codigo)) return
+        const valido = feature !== undefined && Number.isFinite(codigo)
 
-        const { nivel: nivelActual, vista: vistaActual, setFiltro: aplicar, reducido: sinMovimiento, capas: datos } = actual.current
-        const area = datos?.areas.features.find((f) => f.properties?.codigo === codigo)
-        const caja = area ? cajaEnvolvente({ features: [area] }) : null
-
-        // Bajar un nivel: departamento -> sus municipios; municipio -> filtrarlo
-        const esDepto = nivelActual === 'depto'
-        const depto = esDepto ? codigo : Math.floor(codigo / 100)
-        ultimoEncuadre.current = claveEncuadreDe('municipio', depto, esDepto ? undefined : codigo, vistaActual)
-
-        if (caja) {
-          objetivo.current = caja
-          mapa.fitBounds(caja as LngLatBoundsLike, {
-            padding: margenesEncuadre(elemento),
-            maxZoom: 11,
-            duration: sinMovimiento ? 0 : 900,
-            pitch: vistaActual === '3d' ? PITCH_3D : 0,
-          })
+        if (tactil) {
+          // Mapa vacío: cierra la ficha; otra burbuja o área: la reemplaza
+          setHover(null)
+          if (!valido) {
+            marcarHover(null)
+            setFicha(null)
+            return
+          }
+          marcarHover(codigo)
+          setFicha({ props: feature.properties as PropiedadesMapa, capas: actual.current.capas })
+          // Que la ficha (abajo) no tape lo tocado: si quedó debajo, se sube
+          const libreHasta = elemento.clientHeight - ALTO_ZONA_FICHA
+          if (e.point.y > libreHasta) {
+            mapa.panBy([0, e.point.y - libreHasta], { duration: actual.current.reducido ? 0 : 300 })
+          }
+          return
         }
 
-        marcarHover(null)
-        setHover(null)
-        aplicar(esDepto ? 'depto' : 'municipio', codigo)
+        if (valido) bajarNivel(codigo)
       })
 
       setListo(true)
@@ -633,6 +694,7 @@ export function MapaCoropletico() {
     const visible = (capa: string, si: boolean) => mapa.setLayoutProperty(capa, 'visibility', si ? 'visible' : 'none')
 
     visible('burbujas', vista === 'burbujas')
+    visible('burbujas-frente', vista === 'burbujas')
     visible('areas-relleno', vista !== '3d')
     visible('areas-sin-victimas', vista === 'areas')
     visible('areas-3d', vista === '3d')
@@ -665,24 +727,21 @@ export function MapaCoropletico() {
     const intenso: ExpressionSpecification = ['==', ['get', 'intenso'], true]
 
     mapa.setLayoutProperty('burbujas-halo', 'visibility', activo ? 'visible' : 'none')
-    // En móvil el halo se reduce (menos píxeles difuminados que dibujar)
+    // Halo sutil: apenas sobresale de la burbuja y no tiñe a las vecinas; en
+    // móvil, aún más corto (menos píxeles difuminados que dibujar)
     mapa.setPaintProperty('burbujas-halo', 'circle-radius', [
       '*',
       ['get', 'radio'],
-      ['case', intenso, movil ? 1.6 : 2.2, movil ? 1.3 : 1.8],
+      ['case', intenso, movil ? 1.3 : 1.5, movil ? 1.15 : 1.3],
     ])
-    mapa.setPaintProperty('burbujas-halo', 'circle-opacity', claro ? ['case', intenso, 0.22, 0.1] : ['case', intenso, 0.42, movil ? 0.12 : 0.25])
+    mapa.setPaintProperty('burbujas-halo', 'circle-opacity', claro ? ['case', intenso, 0.12, 0.06] : ['case', intenso, 0.22, 0.12])
 
-    mapa.setPaintProperty('burbujas', 'circle-blur', activo && !claro ? 0.3 : 0)
-    mapa.setPaintProperty('burbujas', 'circle-stroke-width', [
-      'case',
-      HOVER,
-      2,
-      ['==', ['get', 'clase'], 0],
-      0,
-      activo && !claro ? 0.5 : 0.8,
-    ])
-    mapa.setPaintProperty('burbujas', 'circle-stroke-opacity', ['case', HOVER, 1, activo && !claro ? 0.35 : 0.9])
+    // Bordes nítidos (sin difuminar la burbuja) y un contorno fino y
+    // semitransparente que separa las burbujas que se tocan; en tema claro un
+    // poco más opaco, porque las clases claras se apoyan en él
+    mapa.setPaintProperty('burbujas', 'circle-blur', 0)
+    mapa.setPaintProperty('burbujas', 'circle-stroke-width', ['case', ['==', ['get', 'clase'], 0], 0, 0.75])
+    mapa.setPaintProperty('burbujas', 'circle-stroke-opacity', claro ? 0.85 : 0.6)
   }, [listo, vista, brillo, paleta])
 
   // -- Encuadre automático (filtros, "volver", enlaces compartidos) --------
@@ -757,19 +816,6 @@ export function MapaCoropletico() {
       etiquetas.current.push({ marcador, elemento: el, lngLat, burbuja: -1, radio: -SEPARACION_ETIQUETA })
     }
 
-    // Cifras nítidas dentro de las burbujas grandes (HTML, sin difuminado)
-    if (vista === 'burbujas' && capas) {
-      for (const f of capas.burbujas.features) {
-        const p = f.properties as PropiedadesMapa & { radio: number }
-        if (p.clase === 0 || p.radio < RADIO_CIFRA) continue
-        const el = document.createElement('span')
-        el.className = 'cifra-burbuja'
-        el.textContent = formatoEntero(p.total)
-        el.style.color = p.clase <= 2 ? paleta.mapCifraBaja : paleta.mapCifraAlta
-        nuevo(f.geometry.coordinates as [number, number], el)
-      }
-    }
-
     recolocar.current()
   }, [listo, vista, nivel, capas, contexto, filtros.depto, paleta])
 
@@ -784,6 +830,14 @@ export function MapaCoropletico() {
       />
 
       {hover && <TarjetaHover hover={hover} nivel={nivel} />}
+      {ficha && ficha.capas === capas && (
+        <FichaSeleccion
+          props={ficha.props}
+          nivel={nivel}
+          onCerrar={cerrarFicha}
+          onBajarNivel={() => bajarNivelRef.current(ficha.props.codigo)}
+        />
+      )}
 
       {(isPending || (isFetching && !clasificacion)) && (
         <p className="flotante etiqueta absolute top-28 left-1/2 -translate-x-1/2 px-3 py-1.5" role="status">

@@ -51,7 +51,7 @@ describe('Acerca', () => {
     expect(screen.getAllByText('52,488').length).toBeGreaterThan(0)
     expect((await screen.findAllByText('2018–2024')).length).toBe(1)
     expect(screen.getAllByText('22').length).toBeGreaterThan(0)
-    expect(document.title).toBe('Acerca de · Severidad vial · Guatemala')
+    expect(document.title).toBe('Acerca de · Crash Severity · Guatemala')
   })
 
   it('no menciona el paper, el congreso ni "Tabla I"', () => {

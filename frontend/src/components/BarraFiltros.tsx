@@ -35,7 +35,7 @@ export function Selector({ campo, catalogos, prefijo }: { campo: FiltroKey; cata
         id={id}
         value={valor ?? ''}
         onChange={(e) => setFiltro(campo, e.target.value === '' ? undefined : Number(e.target.value))}
-        className={`w-full min-w-0 truncate rounded-sm border bg-panel-2 px-2 py-1 text-sm ${
+        className={`w-full min-w-0 truncate rounded-sm border bg-panel-2 px-2 py-1 text-sm max-lg:min-h-11 ${
           valor === undefined ? 'border-borde-fuerte text-tenue' : 'border-acento text-tinta'
         }`}
       >

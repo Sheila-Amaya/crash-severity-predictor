@@ -137,14 +137,19 @@
   }
 
   /* Pantallas pequeñas: abajo están la barra y las hojas; el zoom sube a la
-     esquina superior derecha, bajo la franja de KPIs */
+     esquina superior derecha, bajo la franja de KPIs y el botón "Volver" */
   @media (max-width: 1023px) {
     .maplibregl-ctrl-bottom-right {
-      top: 5.5rem !important;
+      top: 7.75rem !important;
       bottom: auto !important;
     }
     .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
       margin: 0 16px 0 0 !important;
+    }
+    /* Zona táctil de 44 px en los botones de zoom */
+    .maplibregl-ctrl-group button {
+      width: 44px !important;
+      height: 44px !important;
     }
   }
 
@@ -193,14 +198,6 @@
     left: 0;
     font-size: 8.5px;
     letter-spacing: 0.06em;
-  }
-
-  .cifra-burbuja {
-    pointer-events: none;
-    font-family: var(--font-mono);
-    font-size: 10.5px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
   }
 
   /* Panel flotante sobre el mapa */
