@@ -1,4 +1,4 @@
-# Severidad vial en Guatemala
+# Crash Severity — Siniestralidad vial en Guatemala
 
 > **English summary.** Interactive map, statistics API and Random Forest model of traffic-crash victim severity in Guatemala (INE microdata, 2018–2024).
 > SHAP explains each prediction; the stack runs with Docker (React + MapLibre, nginx, FastAPI, PostgreSQL/PostGIS).
