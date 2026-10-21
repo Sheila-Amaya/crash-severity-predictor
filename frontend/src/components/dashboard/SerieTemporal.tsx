@@ -7,6 +7,7 @@ import { useDuracionAnimacion } from '../../hooks/movimiento'
 import { useFiltros } from '../../state/filtros'
 import { usePaleta } from '../../theme/tema'
 import { formatoEntero, formatoNulo, formatoPorcentaje } from '../../utils/formato'
+import { notaOmitidos, separarSinDato } from '../../utils/serie'
 import { EtiquetaSeccion } from '../ui/Editorial'
 import { ErrorCarga, Skeleton } from '../ui/Estados'
 import { Segmentado } from '../ui/Segmentado'
@@ -94,6 +95,9 @@ export function SerieTemporal({ conTitulo = true }: { conTitulo?: boolean }) {
   const duracion = useDuracionAnimacion()
 
   const datos = (data?.datos ?? []).map((d) => ({ ...d, eje: corta(d.etiqueta, agrupar) }))
+  // La tabla conserva todas las filas para que los totales cuadren; la gráfica omite las sin dato
+  const { visibles, omitidos } = separarSinDato(datos)
+  const nota = notaOmitidos(omitidos, agrupar)
   const tick = { fill: paleta.muted, fontSize: 10, fontFamily: 'JetBrains Mono Variable, monospace' }
 
   return (
@@ -123,7 +127,7 @@ export function SerieTemporal({ conTitulo = true }: { conTitulo?: boolean }) {
         <>
           <div className={`h-48 transition-opacity duration-200 ${isFetching ? 'opacity-60' : ''}`}>
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={datos} margin={{ top: 6, right: 0, bottom: 0, left: -8 }}>
+              <ComposedChart data={visibles} margin={{ top: 6, right: 0, bottom: 0, left: -8 }}>
                 <CartesianGrid stroke={paleta.border} vertical={false} />
                 <XAxis dataKey="eje" tick={tick} stroke={paleta.border} tickLine={false} interval={0} />
                 <YAxis yAxisId="victimas" tickFormatter={formatoEntero} tick={tick} stroke={paleta.border} tickLine={false} width={44} />
@@ -167,6 +171,7 @@ export function SerieTemporal({ conTitulo = true }: { conTitulo?: boolean }) {
             </ResponsiveContainer>
           </div>
           <LeyendaSerie />
+          {nota && <p className="text-[11px] text-tenue">{nota}</p>}
         </>
       )}
     </section>
